@@ -54,7 +54,7 @@ namespace TCoSServer
   
 
         //Handle message
-        messageHandlers[(LoginMessageId)(message.id)] (message);
+        //messageHandlers[(LoginMessageId)(message.id)] (message);
 
         //
         HandleMessageCallback callback;
