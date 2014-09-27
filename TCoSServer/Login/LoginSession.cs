@@ -56,6 +56,16 @@ namespace TCoSServer
         //Handle message
         messageHandlers[(LoginMessageId)(message.id)] (message);
 
+        //
+        HandleMessageCallback callback;
+        if (messageHandlers.TryGetValue((LoginMessageId)message.id, out callback)) {
+          callback(message);
+        }
+        else {
+          Console.WriteLine("No Callback registered for: " + message.id);
+        }
+        //
+
         if (!handler.Connected)
           return;
 
