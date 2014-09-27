@@ -6,6 +6,14 @@ using System.IO;
 
 namespace TCoSServer.Common
 {
+  /// <summary>
+  /// Class helper to read a Message received
+  /// from the network.
+  /// The constructor automatically parse the header.
+  /// 
+  /// Do not hesitate to add helper methods for data types
+  /// not handled yet.
+  /// </summary>
   class MessageReader : IDisposable
   {
     private Message message;

@@ -14,7 +14,7 @@ namespace TCoSServer.GameServer.Network.Packets
 
     public Message Generate ()
     {
-      Message result = null;
+      Message result;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_CS_LOGIN))
       {
         writer.Write (BaseCharacterInfo);

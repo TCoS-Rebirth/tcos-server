@@ -7,31 +7,48 @@ using TCoSServer.Common;
 using TCoSServer.GameServer.Network.Structures;
 using System.IO;
 using TCoSServer.GameServer.Network.Packets;
+using System.Diagnostics;
 
 namespace TCoSServer.GameServer.Network
 {
 
   /// <summary>
   /// Represents a connection with a specific player.
+  /// Handle player related messages.
   /// </summary>
   class NetworkPlayer
   {
-    private Gameplay.Player player;
-    private Dictionary<GameMessageIds, Common.HandleMessageCallback> messageHandlers;
-
-    public NetworkPlayer (Socket clientSocket, uint transportKey)
+    private struct NetworkPlayerState
     {
-      player = findPlayerWithTransportKey (transportKey);
+      public NetworkPlayer player;
+      public Message message;
+    }
 
-      messageHandlers = new Dictionary<GameMessageIds, Common.HandleMessageCallback> (50);
+    private Gameplay.Player player;
+    private delegate void HandleMessageCallback (NetworkPlayer player, Message message);
+
+    private static Dictionary<GameMessageIds, HandleMessageCallback> messageHandlers;
+
+    public static void InitMessageHandlers ()
+    {
+      messageHandlers = new Dictionary<GameMessageIds, HandleMessageCallback> (50);
       messageHandlers.Add (GameMessageIds.DISCONNECT, HandleDisconnect);
       messageHandlers.Add (GameMessageIds.C2S_WORLD_LOGOUT, HandleWorldLogout);
       messageHandlers.Add (GameMessageIds.C2S_WORLD_PRE_LOGIN_ACK, HandleWorldPreLoginAck);
       messageHandlers.Add (GameMessageIds.C2S_CS_CREATE_CHARACTER, HandleCSCreateCharacter);
       messageHandlers.Add (GameMessageIds.C2S_CS_SELECT_CHARACTER, HandleCSSelectCharacter);
+    }
+
+    public NetworkPlayer (Socket clientSocket, uint transportKey)
+    {
+      player = findPlayerWithTransportKey (transportKey);
 
       Message nextMessage = new Message();
       nextMessage.clientSocket = clientSocket;
+
+      NetworkPlayerState state = new NetworkPlayerState ();
+      state.message = nextMessage;
+      state.player = this;
 
       //Send world prelogin packet
       SendWorldPrelogin (clientSocket);
@@ -40,7 +57,7 @@ namespace TCoSServer.GameServer.Network
       {
       //Start handling players messages
       clientSocket.BeginReceive (nextMessage.header, 0, Message.headerSize, 
-                                  SocketFlags.None, HandleNewMessage, nextMessage);
+                                  SocketFlags.None, HandleNewMessage, state);
       }
       catch (ObjectDisposedException)
       { }
@@ -53,9 +70,10 @@ namespace TCoSServer.GameServer.Network
       return new Gameplay.Player ();
     }
 
-    private void HandleNewMessage (IAsyncResult ar)
+    private static void HandleNewMessage (IAsyncResult ar)
     {
-      Message message = (Message)ar.AsyncState;
+      NetworkPlayerState state = (NetworkPlayerState)ar.AsyncState;
+      Message message = state.message;
 
       Socket handler = message.clientSocket;
       if (handler == null)
@@ -73,7 +91,7 @@ namespace TCoSServer.GameServer.Network
       //Handle message
       try
       {
-        messageHandlers[(GameMessageIds)message.id] (message);
+        messageHandlers[(GameMessageIds)message.id] (state.player, message);
       }
       catch (KeyNotFoundException)
       {
@@ -90,16 +108,17 @@ namespace TCoSServer.GameServer.Network
       //Listen for new message
       Message nextMessage = new Message ();
       nextMessage.clientSocket = handler;
+      state.message = nextMessage;
       Console.WriteLine ("[GS] Listen for next incoming message");
       try
       {
-        handler.BeginReceive (nextMessage.header, 0, Message.headerSize, SocketFlags.None, HandleNewMessage, nextMessage);
+        handler.BeginReceive (nextMessage.header, 0, Message.headerSize, SocketFlags.None, HandleNewMessage, state);
       }
       catch (ObjectDisposedException)
       {  }
     }
 
-    private void HandleWorldPreLoginAck (Message message)
+    private static void HandleWorldPreLoginAck (NetworkPlayer player, Message message)
     {
       message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
       uint statusCode;
@@ -109,10 +128,15 @@ namespace TCoSServer.GameServer.Network
       }
       Console.WriteLine ("[GS] Received C2S_WORLD_PRE_LOGIN_ACK with status {0}", statusCode);
 
-      SendCSLogin (message.clientSocket);
+      if (GameServer.BypassCharacterScreen)
+      {
+        //TODO
+      }
+
+      SendCSLogin (player, message.clientSocket);
     }
 
-    private void HandleCSCreateCharacter (Message message)
+    private static void HandleCSCreateCharacter (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle CS_CREATE_CHARACTER");
       message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
@@ -124,18 +148,18 @@ namespace TCoSServer.GameServer.Network
       SendCSCreateCharacterAck (createChar, message.clientSocket);
     }
 
-    private void HandleCSSelectCharacter (Message message)
+    private static void HandleCSSelectCharacter (NetworkPlayer player, Message message)
     {
     }
 
-    private void HandleDisconnect (Message message)
+    private static void HandleDisconnect (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("Player disconnected");
       message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
       message.clientSocket.Close ();
     }
 
-    private void HandleWorldLogout (Message message)
+    private static void HandleWorldLogout (NetworkPlayer player, Message message)
     {
       message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
       Console.WriteLine ("Player send World Logout");
@@ -143,9 +167,9 @@ namespace TCoSServer.GameServer.Network
     }
 
     //Send messages
-    private void SendWorldPrelogin (Socket clientSocket)
+    private static void SendWorldPrelogin (Socket clientSocket)
     {
-      Message worldPreLogin = null;
+      Message worldPreLogin;
       const uint statusCode = 0;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_WORLD_PRE_LOGIN, 8))
       {
@@ -157,11 +181,11 @@ namespace TCoSServer.GameServer.Network
       clientSocket.Send (worldPreLogin.data);
     }
 
-    private void SendCSLogin (Socket clientSocket)
+    private static void SendCSLogin (NetworkPlayer nPlayer, Socket clientSocket)
     {
       s2c_cs_login message = new s2c_cs_login ();
       //Character creation screen
-      if (player.getNumCharacters () == 0)
+      if (nPlayer.player.getNumCharacters () == 0)
       {
         Message csLogin = message.Generate ();
 
@@ -193,7 +217,7 @@ namespace TCoSServer.GameServer.Network
       }
     }
 
-    private void SendCSCreateCharacterAck (c2s_cs_create_character characterData, Socket clientSocket)
+    private static void SendCSCreateCharacterAck (c2s_cs_create_character characterData, Socket clientSocket)
     {
       s2c_cs_create_character_ack ack = new s2c_cs_create_character_ack (characterData);
       Message message = ack.Generate ();

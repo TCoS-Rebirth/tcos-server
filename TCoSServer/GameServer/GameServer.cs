@@ -10,8 +10,17 @@ using TCoSServer.GameServer.Network;
 
 namespace TCoSServer.GameServer
 {
+
+  /// <summary>
+  /// Entry point for the GameServer.
+  /// Accepts new connection and then give 
+  /// that connection to NetworkPlayer.
+  /// </summary>
   class GameServer
   {
+    //Temp cheat
+    public static bool BypassCharacterScreen = false;
+
     private IPEndPoint localEndPoint;
     private Socket listener;
     private ManualResetEvent listenForNewConnection = new ManualResetEvent (false);
@@ -39,6 +48,9 @@ namespace TCoSServer.GameServer
       {
         valid = false;
       }
+
+      //Init everything
+      NetworkPlayer.InitMessageHandlers ();
     }
 
     public void StopServer ()

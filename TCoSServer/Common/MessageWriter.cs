@@ -7,6 +7,13 @@ using TCoSServer.GameServer.Network.Structures;
 
 namespace TCoSServer.Common
 {
+  /// <summary>
+  /// Class helper to write a Message to send it
+  /// to the network.
+  /// 
+  /// Do not hesitate to add helper methods for data types
+  /// not handled yet.
+  /// </summary>
   public class MessageWriter : IDisposable
   {
     private MemoryStream bodyBuffer;
