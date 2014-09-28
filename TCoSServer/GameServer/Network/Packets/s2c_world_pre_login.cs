@@ -9,7 +9,7 @@ namespace TCoSServer.GameServer.Network.Packets
   class s2c_world_pre_login : SBPacket
   {
     public uint Unknwown;//Must be 0
-    public uint WorldId;
+    public int WorldId;
 
     public override Message Generate ()
     {

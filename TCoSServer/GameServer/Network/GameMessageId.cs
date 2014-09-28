@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace TCoSServer.GameServer.Network
+﻿namespace TCoSServer.GameServer.Network
 {
   public enum GameMessageIds : ushort
   {

@@ -70,6 +70,12 @@ namespace TCoSServer.GameServer.Network
       return new Gameplay.Player ();
     }
 
+    /// <summary>
+    /// Asynchronous message handling happens here.
+    /// The next message header is parsed and according to the message
+    /// id, the correct message handler method  is called.
+    /// </summary>
+    /// <param name="ar">Result of the asynchronous operation</param>
     private static void HandleNewMessage (IAsyncResult ar)
     {
       NetworkPlayerState state = (NetworkPlayerState)ar.AsyncState;
@@ -147,10 +153,10 @@ namespace TCoSServer.GameServer.Network
 
     private static void HandleDisconnect (NetworkPlayer player, Message message)
     {
-      Console.WriteLine ("Player disconnected");
+      Console.WriteLine ("[GS] Player disconnected");
       disconnect dis = new disconnect ();
       dis.ReadFrom (message);
-      Console.WriteLine ("Reason: {0}. Status: {1}", dis.Reason, dis.Status);
+      Console.WriteLine ("[GS] Reason: {0}. Status: {1}", dis.Reason, dis.Status);
       message.clientSocket.Close ();
     }
 
@@ -158,7 +164,7 @@ namespace TCoSServer.GameServer.Network
     {
       c2s_world_logout packet = new c2s_world_logout ();
       packet.ReadFrom (message);
-      Console.WriteLine ("Player send World Logout");
+      Console.WriteLine ("[GS] Player send World Logout");
       message.clientSocket.Close ();
     }
 
