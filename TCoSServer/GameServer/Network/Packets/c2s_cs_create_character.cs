@@ -7,7 +7,7 @@ using System.Collections;
 
 namespace TCoSServer.GameServer.Network.Packets
 {
-  struct c2s_cs_create_character
+  class c2s_cs_create_character : SBPacket
   {
     public string Name;
     public int ClassID;
@@ -87,14 +87,19 @@ namespace TCoSServer.GameServer.Network.Packets
     public byte BodyTypeId;
     public byte GenderId;
     public byte RaceId;
+
+    public byte[] Lod0;
+    public byte[] Lod1;
+    public byte[] Lod2;
+    public byte[] Lod3;
     
 
-    public void ReadFrom (MessageReader reader)
+    protected override void InternalRead (MessageReader reader)
     {
-      byte[] Lod0 = reader.ReadByteArray ();
-      byte[] Lod1 = reader.ReadByteArray ();
-      byte[] Lod2 = reader.ReadByteArray ();
-      byte[] Lod3 = reader.ReadByteArray ();
+      Lod0 = reader.ReadByteArray ();
+      Lod1 = reader.ReadByteArray ();
+      Lod2 = reader.ReadByteArray ();
+      Lod3 = reader.ReadByteArray ();
       Name = reader.ReadString ();
       ClassID = reader.ReadInt32 ();
       FixedSkill1Id = reader.ReadInt32 ();
@@ -103,6 +108,7 @@ namespace TCoSServer.GameServer.Network.Packets
       CustomSkill1Id = reader.ReadInt32 ();
       CustomSkill2Id = reader.ReadInt32 ();
       RangedWeaponIdDuplicated = reader.ReadInt32 ();
+      
 
       //Parse compressed data, reverse order is easier to understand
       Array.Reverse(Lod0);

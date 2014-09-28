@@ -120,13 +120,9 @@ namespace TCoSServer.GameServer.Network
 
     private static void HandleWorldPreLoginAck (NetworkPlayer player, Message message)
     {
-      message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
-      uint statusCode;
-      using (MessageReader reader = new MessageReader (message))
-      {
-        statusCode = reader.ReadUInt32 ();
-      }
-      Console.WriteLine ("[GS] Received C2S_WORLD_PRE_LOGIN_ACK with status {0}", statusCode);
+      c2s_world_pre_login_ack preLoginAck = new c2s_world_pre_login_ack ();
+      preLoginAck.ReadFrom (message);
+      Console.WriteLine ("[GS] Received C2S_WORLD_PRE_LOGIN_ACK with status {0}", preLoginAck.StatusCode);
 
       if (GameServer.BypassCharacterScreen)
       {
@@ -139,12 +135,9 @@ namespace TCoSServer.GameServer.Network
     private static void HandleCSCreateCharacter (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle CS_CREATE_CHARACTER");
-      message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
       c2s_cs_create_character createChar = new c2s_cs_create_character ();
-      using (MessageReader reader = new MessageReader (message))
-      {
-        createChar.ReadFrom (reader);
-      }
+      createChar.ReadFrom (message);
+      
       SendCSCreateCharacterAck (createChar, message.clientSocket);
     }
 
@@ -155,13 +148,16 @@ namespace TCoSServer.GameServer.Network
     private static void HandleDisconnect (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("Player disconnected");
-      message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
+      disconnect dis = new disconnect ();
+      dis.ReadFrom (message);
+      Console.WriteLine ("Reason: {0}. Status: {1}", dis.Reason, dis.Status);
       message.clientSocket.Close ();
     }
 
     private static void HandleWorldLogout (NetworkPlayer player, Message message)
     {
-      message.clientSocket.Receive (message.data, message.size, SocketFlags.None);
+      c2s_world_logout packet = new c2s_world_logout ();
+      packet.ReadFrom (message);
       Console.WriteLine ("Player send World Logout");
       message.clientSocket.Close ();
     }
@@ -169,16 +165,11 @@ namespace TCoSServer.GameServer.Network
     //Send messages
     private static void SendWorldPrelogin (Socket clientSocket)
     {
-      Message worldPreLogin;
-      const uint statusCode = 0;
-      using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_WORLD_PRE_LOGIN, 8))
-      {
-        writer.Write (statusCode);
-        writer.Write (Gameplay.World.CHARACTER_SELECTION_ID);
-        worldPreLogin = writer.ComputeMessage ();
-      }
-
-      clientSocket.Send (worldPreLogin.data);
+      s2c_world_pre_login preLogin = new s2c_world_pre_login ();
+      preLogin.Unknwown = 0;
+      preLogin.WorldId = 1;
+      Message message = preLogin.Generate ();
+      clientSocket.Send (message.data);
     }
 
     private static void SendCSLogin (NetworkPlayer nPlayer, Socket clientSocket)

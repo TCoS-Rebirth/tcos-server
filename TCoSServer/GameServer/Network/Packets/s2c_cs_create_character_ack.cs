@@ -8,7 +8,7 @@ using TCoSServer.Common;
 
 namespace TCoSServer.GameServer.Network.Packets
 {
-  struct s2c_cs_create_character_ack
+  class s2c_cs_create_character_ack : SBPacket
   {
     public int Status;
     public sd_base_character_info CharacterInformation;
@@ -29,6 +29,10 @@ namespace TCoSServer.GameServer.Network.Packets
       CharacterInformation.CharacterData.Position = new FVector (0, 0, 6200.0f);
       CharacterInformation.CharacterData.Rotator = new FRotator (0, 0, 0);
       CharacterInformation.CharacterData.WorldId = World.PT_HAWKSMOUTH_ID;
+      CharacterInformation.CharacterData.AppearancePart1 = createCharacterData.RaceId | (createCharacterData.GenderId << 1) | 
+                                                  (createCharacterData.BodyTypeId << 2) | ((createCharacterData.HeadTypeId & 0x0F) << 4);
+      CharacterInformation.CharacterData.AppearancePart1 |= (createCharacterData.HeadTypeId & 0xF0) << 8;
+      CharacterInformation.CharacterData.AppearancePart1 |= createCharacterData.BodyColour << 16;
 
       CharacterInformation.CharacterSheetData = new sd_character_sheet_data ();
       CharacterInformation.CharacterSheetData.ClassId = createCharacterData.ClassID;
@@ -49,7 +53,7 @@ namespace TCoSServer.GameServer.Network.Packets
       CharacterInformation.Items[0].Colour2 = createCharacterData.ChestArmourColour2;
     }
 
-    public Message Generate ()
+    public override Message Generate ()
     {
       Message result;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_CS_CREATE_CHARACTER_ACK))

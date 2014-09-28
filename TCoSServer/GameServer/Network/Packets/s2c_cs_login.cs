@@ -7,12 +7,12 @@ using TCoSServer.Common;
 
 namespace TCoSServer.GameServer.Network.Packets
 {
-  struct s2c_cs_login
+  class s2c_cs_login : SBPacket
   {
     public sd_base_character_info[] BaseCharacterInfo;
     public Dictionary<int, int> FameMap;
 
-    public Message Generate ()
+    public override Message Generate ()
     {
       Message result;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_CS_LOGIN))
