@@ -97,12 +97,12 @@ namespace TCoSServer.Common
       return message;
     }
 
-    public void Write (int data)
+    public void Write (Int32 data)
     {
       bodyWriter.Write (data);
     }
 
-    public void Write (uint data)
+    public void Write (UInt32 data)
     {
       bodyWriter.Write (data);
 
@@ -119,6 +119,16 @@ namespace TCoSServer.Common
     }
 
     public void Write (float data)
+    {
+      bodyWriter.Write (data);
+    }
+
+    public void Write (UInt64 data)
+    {
+      bodyWriter.Write (data);
+    }
+
+    public void Write (Int64 data)
     {
       bodyWriter.Write (data);
     }

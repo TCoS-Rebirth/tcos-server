@@ -196,7 +196,6 @@ namespace TCoSServer.GameServer.Network
 
         sd_character_data charData = new sd_character_data ();
         charData.AccountId = 1;
-        charData.AppearancePart1 = 1;
         charData.Name = "Mertyuiolpmoiuyt";
 
         baseInfo.CharacterData = charData;

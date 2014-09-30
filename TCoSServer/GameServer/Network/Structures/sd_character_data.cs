@@ -39,8 +39,8 @@ namespace TCoSServer.GameServer.Network.Structures
     public FVector Position;
     public int WorldId;
     public int Money;
-    public int AppearancePart1;
-    public int AppearancePart2;
+    public Int32 AppearancePart1;
+    public Int32 AppearancePart2;
     public FRotator Rotator;
     public int FactionId;
     public int LastUsedTimeStamp;
