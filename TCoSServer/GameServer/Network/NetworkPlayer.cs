@@ -280,7 +280,7 @@ namespace TCoSServer.GameServer.Network
       s2c_world_login worldLogin = new s2c_world_login ();
       worldLogin.Unknown1 = 0;
       worldLogin.ActorId = 0;
-      worldLogin.PawnStream = new sd_pawn_stream ();
+      worldLogin.PawnStream = new sd_pawn_login_stream ();
       worldLogin.PawnStream.BaseMoveSpeed = 2;
       worldLogin.PawnStream.PhysicType = 1;
       worldLogin.PawnStream.PawnState = 1;

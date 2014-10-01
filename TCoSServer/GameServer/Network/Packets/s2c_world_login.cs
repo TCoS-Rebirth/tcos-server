@@ -13,7 +13,7 @@ namespace TCoSServer.GameServer.Network.Packets
     public int ActorId;
     public int Unknown2;
     public byte Unknown3;
-    public sd_pawn_stream PawnStream;
+    public sd_pawn_login_stream PawnStream;
     public sd_player_stat_stream PlayerStatsStream;
     public int UnknownSlider;
     public int Unknown4;
