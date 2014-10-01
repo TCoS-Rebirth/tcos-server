@@ -41,19 +41,20 @@ namespace TCoSServer.GameServer.Network.Packets
       CharacterInformation.CharacterSheetData.ClassId = charData.ClassID;
       CharacterInformation.CharacterSheetData.Health = 100.0f;
       CharacterInformation.CharacterSheetData.SelectedSkillDeckID = 0;
-      //Test
-      //CharacterInformation.Items = new sd_item[1];
 
-      //CharacterInformation.Items[0] = new sd_item ();
-      //CharacterInformation.Items[0].ItemId = charData.ChestArmourId;
-      //Console.WriteLine ("ItemId: {0}", charData.ChestArmourId);
-      //Console.WriteLine ("ItemTypeId: {0}", (int)EItemType.IT_ArmorChest);
-      //CharacterInformation.Items[0].ItemTypeId = 72470;
-      //CharacterInformation.Items[0].CharacterId = 42;
-      //CharacterInformation.Items[0].EItemLocationType = (byte) EItemLocationType.ILT_Equipment;
-      //CharacterInformation.Items[0].LocationId = (int) EEquipmentSlot.ES_CHESTARMOUR;
-      //CharacterInformation.Items[0].Colour1 = charData.ChestArmourColour1;
-      //CharacterInformation.Items[0].Colour2 = charData.ChestArmourColour2;
+      Console.WriteLine ("Weapon Id: {0}", charData.MeleeWeaponId);
+      //Test
+      CharacterInformation.Items = new sd_item[1];
+
+      CharacterInformation.Items[0] = new sd_item ();
+      CharacterInformation.Items[0].ItemId = charData.ChestArmourId;
+      Console.WriteLine ("ItemId: {0}", charData.ChestArmourId);
+      CharacterInformation.Items[0].ItemTypeId = 72470;
+      CharacterInformation.Items[0].CharacterId = 41267;//42;
+      CharacterInformation.Items[0].EItemLocationType = 1;
+      CharacterInformation.Items[0].LocationId = (int)EEquipmentSlot.ES_CHESTARMOUR;
+      CharacterInformation.Items[0].Colour1 = charData.ChestArmourColour1;
+      CharacterInformation.Items[0].Colour2 = charData.ChestArmourColour2;
     }
 
     public override Message Generate ()

@@ -10,8 +10,8 @@ namespace TCoSServer.GameServer.Network.Structures
   {
     public int ItemId;
     public int ItemTypeId;
+    public byte EItemLocationType; //between [0-6]
     public int CharacterId;
-    public byte EItemLocationType;
     public int LocationId;
     public int LocationSlot;
     public int StackSize;
@@ -24,8 +24,8 @@ namespace TCoSServer.GameServer.Network.Structures
     {
       writer.Write (ItemId);
       writer.Write (ItemTypeId);
-      writer.Write (CharacterId);
       writer.Write (EItemLocationType);
+      writer.Write (CharacterId);
       writer.Write (LocationId);
       writer.Write (LocationSlot);
       writer.Write (StackSize);
@@ -38,7 +38,7 @@ namespace TCoSServer.GameServer.Network.Structures
 
   public enum EItemType
   {
-    IT_BodySlot,
+    IT_BodySlot = 0,
     IT_JewelryRing,
     IT_JewelryNecklace,
     IT_JewelryQualityToken,
@@ -111,10 +111,20 @@ namespace TCoSServer.GameServer.Network.Structures
 //ID: 41298, Text: SBGamePlay.Item_WeaponRanged
 //ID: 41299, Text: SBGamePlay.Item_WeaponShield
 
+  public enum ItemFilterGroup : byte
+  {
+    IFG_ALL_WEAPONS = 0,
+    IFG_ARMOUR_UPPER_BODY = 1,
+    IFG_ARMOUR_LOWER_BODY = 2,
+    IFG_ALL_ARMOUR = 3,
+    IFG_CLOTHES_UPPER_BODY = 4,
+    IFG_CLOTHES_LOWER_BODY = 5,
+    IFG_ALL_CLOTHES = 6
+  };
 
   public enum EItemLocationType : byte
   {
-    ILT_Unknown,
+    ILT_Unknown = 1,
     ILT_Inventory,
     ILT_Equipment, //equip and place in slot
     ILT_BodySlot, //equip but dont place (visual, probably for NPC's)

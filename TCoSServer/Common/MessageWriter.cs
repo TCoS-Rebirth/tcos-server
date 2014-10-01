@@ -148,7 +148,22 @@ namespace TCoSServer.Common
 
     public void Write (SBStruct sbStruct)
     {
+      if (sbStruct == null)
+        return;
       sbStruct.WriteTo (this);
+    }
+
+    public void Write (int[] array)
+    {
+      if (array == null)
+      {
+        bodyWriter.Write (0);
+        return;
+      }
+
+      bodyWriter.Write (array.Length);
+      foreach (int data in array)
+        bodyWriter.Write (data);
     }
 
     public void Write<T> (T[] array) where T : SBStruct

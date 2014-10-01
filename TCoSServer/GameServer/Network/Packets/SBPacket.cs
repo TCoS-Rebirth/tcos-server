@@ -34,7 +34,8 @@ namespace TCoSServer.GameServer.Network.Packets
     /// <see cref="NetworkPlayer"/> for an example of use.</param>
     public void ReadFrom (Message message)
     {
-      message.clientSocket.Receive (message.data, message.size, System.Net.Sockets.SocketFlags.None);
+      if (message.size > 0)
+        message.clientSocket.Receive (message.data, message.size, System.Net.Sockets.SocketFlags.None);
       using (MessageReader reader = new MessageReader (message))
       {
         InternalRead (reader);
