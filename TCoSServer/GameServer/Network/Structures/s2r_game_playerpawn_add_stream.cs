@@ -13,7 +13,7 @@ namespace TCoSServer.GameServer.Network.Structures
     public byte Physics;
     public byte MoveFrameID;
     public float PvPTimer;
-    public byte NetState;
+    public byte PawnState;
     public int BitFieldInvulenarbility;//See SBGameClasses.h:4819 in AGame_Pawn class
     public float GroundSpeedModifier;
     public int DebugFilters;
@@ -26,7 +26,7 @@ namespace TCoSServer.GameServer.Network.Structures
       writer.Write (Physics);
       writer.Write (MoveFrameID);
       writer.Write (PvPTimer);
-      writer.Write (NetState);
+      writer.Write (PawnState);
       writer.Write (BitFieldInvulenarbility);
       writer.Write (GroundSpeedModifier);
       writer.Write (DebugFilters);

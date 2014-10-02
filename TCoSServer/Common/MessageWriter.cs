@@ -135,6 +135,11 @@ namespace TCoSServer.Common
 
     public void Write (string data)
     {
+      if (data == null)
+      {
+        bodyWriter.Write (0);
+        return;
+      }
       int stringSize = data.Length;//unicode
       bodyWriter.Write (stringSize);
       bodyWriter.Write (data.ToCharArray ());

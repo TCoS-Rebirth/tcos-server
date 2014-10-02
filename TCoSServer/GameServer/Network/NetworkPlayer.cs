@@ -9,6 +9,7 @@ using System.IO;
 using TCoSServer.GameServer.Network.Packets;
 using System.Diagnostics;
 using TCoSServer.GameServer.Gameplay;
+using System.Collections;
 
 namespace TCoSServer.GameServer.Network
 {
@@ -141,6 +142,7 @@ namespace TCoSServer.GameServer.Network
       {  }
     }
 
+    private static bool temporaryBugfix = false;//Will then be fixed with gameplay layer
     private static void HandleWorldPreLoginAck (NetworkPlayer player, Message message)
     {
       c2s_world_pre_login_ack preLoginAck = new c2s_world_pre_login_ack ();
@@ -152,16 +154,34 @@ namespace TCoSServer.GameServer.Network
         Console.WriteLine ("Connecting direct to world");
         SendWorldLogin (message.clientSocket);
       }
-      else
+      else if (!temporaryBugfix)
+      {
         SendCSLogin (player, message.clientSocket);
+        temporaryBugfix = true;
+      }
+      else
+        SendWorldLogin (message.clientSocket);
     }
 
+    //DEBUG REMOVE ME
+    private static byte[] Lod0;
+    private static byte[] Lod1;
+    private static byte[] Lod2;
+    private static byte[] Lod3;
     private static void HandleCSCreateCharacter (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle CS_CREATE_CHARACTER");
       c2s_cs_create_character createChar = new c2s_cs_create_character ();
       createChar.ReadFrom (message);
-      
+      Lod0 = createChar.Lod0;
+      Lod1 = createChar.Lod1;
+      Lod2 = createChar.Lod2;
+      Lod3 = createChar.Lod3;
+      Array.Reverse (Lod0);
+      Array.Reverse (Lod1);
+      Array.Reverse (Lod2);
+      Array.Reverse (Lod3);
+
       SendCSCreateCharacterAck (createChar, message.clientSocket);
     }
 
@@ -169,7 +189,6 @@ namespace TCoSServer.GameServer.Network
     {
       Console.WriteLine ("[GS] Handle CS_SELECT_CHARACTER");
       SendWorldPrelogin (message.clientSocket, World.PT_HAWKSMOUTH_ID);
-      SendWorldLogin (message.clientSocket);
     }
 
     private static void HandleDisconnect (NetworkPlayer player, Message message)
@@ -209,6 +228,37 @@ namespace TCoSServer.GameServer.Network
       Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
       Console.WriteLine ("[GS] Physics: {0}", packet.Physics);
       Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
+
+      //Temp test
+      if (packet.FrameId == 1)
+      {
+        s2c_player_add addPlayer = new s2c_player_add ();
+        addPlayer.FameLevel = 10;
+        addPlayer.Concentration = 10;
+        addPlayer.MaxHealth = 100;
+        addPlayer.Morale = 5;
+        addPlayer.PepRank = 2;
+        addPlayer.Physique = 10;
+        addPlayer.PlayerAppearance = new s2r_game_playerappearance_add_stream ();
+        addPlayer.PlayerAppearance.Lod0 = Lod0;
+        addPlayer.PlayerAppearance.Lod1 = Lod1;
+        addPlayer.PlayerAppearance.Lod2 = Lod2;
+        addPlayer.PlayerAppearance.Lod3 = Lod3;
+        addPlayer.PlayerCharacter = new s2r_game_playercharacter_stream ();
+        addPlayer.PlayerCharacter.Name = "Evhien";
+        addPlayer.PlayerCharacter.FactionID = 1;
+        addPlayer.PlayerCombatState = new s2r_game_combatstate_stream ();
+        addPlayer.PlayerPawn = new s2r_game_playerpawn_add_stream ();
+        addPlayer.PlayerPawn.MoveFrameID = 0;
+        addPlayer.PlayerPawn.NetLocation = new FVector (500, 0, 6106.0f);
+        addPlayer.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
+        addPlayer.PlayerPawn.Physics = 1;
+        addPlayer.PlayerStats = new s2r_game_stats_add_stream ();
+        addPlayer.PlayerStats.Health = 50;
+        addPlayer.PlayerStats.MovementSpeed = 100;
+        Message testMessage = addPlayer.Generate ();
+        message.clientSocket.Send (testMessage.data);
+      }
     }
 
     //Send messages
@@ -279,12 +329,12 @@ namespace TCoSServer.GameServer.Network
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGIN");
       s2c_world_login worldLogin = new s2c_world_login ();
       worldLogin.Unknown1 = 0;
-      worldLogin.ActorId = 0;
+      worldLogin.ActorId = 1;
       worldLogin.PawnStream = new sd_playerpawn_login_stream ();
       worldLogin.PawnStream.BaseMoveSpeed = 2;
       worldLogin.PawnStream.PhysicType = 1;
       worldLogin.PawnStream.PawnState = 1;
-      worldLogin.PawnStream.Unknown7 = 1;
+      worldLogin.PawnStream.MoveFrameID = 1;
 
       worldLogin.PlayerStatsStream = new sd_player_stat_stream ();
       worldLogin.PlayerStatsStream.MoveSpeed = 100;
@@ -292,6 +342,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PlayerStatsStream.CharacterStats = new sd_character_stats_record ();
 
       worldLogin.CharacterInfo = new sd_base_character_info ();
+      worldLogin.CharacterInfo.CharacterId = 42;
       worldLogin.CharacterInfo.CharacterData = new sd_character_data ();
       worldLogin.CharacterInfo.CharacterSheetData = new sd_character_sheet_data ();
       worldLogin.CharacterInfo.CharacterSheetData.ClassId = 2;

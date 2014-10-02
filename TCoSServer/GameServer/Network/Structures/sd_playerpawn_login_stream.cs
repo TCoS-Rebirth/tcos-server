@@ -11,11 +11,11 @@ namespace TCoSServer.GameServer.Network.Structures
     public FVector NetVelocity;
     public FVector NetLocation;
     public byte PhysicType;//1 = walking/normal, 4= flying...
-    public byte Unknown7;
+    public byte MoveFrameID;
     public byte PawnState;//ePawnState { NONE = 0, ALIVE = 1, DEATH = 2 }
-    public int Unknown8;
+    public int BitfieldInvulnerable;
     public float BaseMoveSpeed; //2 = normal
-    public int Unknown9;//some kind of flags (550 = green arrow (latency simulation maybe?)
+    public int DebugFilters;//some kind of flags (550 = green arrow (latency simulation maybe?)
     public int Visibility;// {visible = 0, invisible = 1}
 
     public void WriteTo (MessageWriter writer)
@@ -23,11 +23,11 @@ namespace TCoSServer.GameServer.Network.Structures
       writer.Write (NetVelocity);
       writer.Write (NetLocation);
       writer.Write (PhysicType);
-      writer.Write (Unknown7);
+      writer.Write (MoveFrameID);
       writer.Write (PawnState);
-      writer.Write (Unknown8);
+      writer.Write (BitfieldInvulnerable);
       writer.Write (BaseMoveSpeed);
-      writer.Write (Unknown9);
+      writer.Write (DebugFilters);
       writer.Write (Visibility);
     }
   }
