@@ -90,7 +90,7 @@
     <Compile Include="GameServer\Network\Structures\sd_character_sheet_data.cs" />
     <Compile Include="GameServer\Network\Structures\sd_character_stats_record.cs" />
     <Compile Include="GameServer\Network\Structures\sd_item.cs" />
-    <Compile Include="GameServer\Network\Structures\sd_pawn_stream.cs" />
+    <Compile Include="GameServer\Network\Structures\sd_pawn_login_stream.cs" />
     <Compile Include="GameServer\Network\Structures\sd_player_stat_stream.cs" />
     <Compile Include="GameServer\Network\Structures\sd_quest.cs" />
     <Compile Include="GameServer\Network\Structures\sd_skill.cs" />
