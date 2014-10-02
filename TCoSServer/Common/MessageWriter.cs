@@ -153,6 +153,19 @@ namespace TCoSServer.Common
       sbStruct.WriteTo (this);
     }
 
+    public void Write (byte[] array)
+    {
+      if (array == null)
+      {
+        bodyWriter.Write (0);
+        return;
+      }
+
+      bodyWriter.Write (array.Length);
+      foreach (byte data in array)
+        bodyWriter.Write (data);
+
+    }
     public void Write (int[] array)
     {
       if (array == null)
