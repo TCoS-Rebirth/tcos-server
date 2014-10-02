@@ -10,6 +10,7 @@ using TCoSServer.GameServer.Network.Packets;
 using System.Diagnostics;
 using TCoSServer.GameServer.Gameplay;
 using System.Collections;
+using TCoSServer.GameServer.Gameplay.Enums;
 
 namespace TCoSServer.GameServer.Network
 {
@@ -215,7 +216,18 @@ namespace TCoSServer.GameServer.Network
       Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
       Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
       Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
-      Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
+      Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
+
+      //Test 
+      s2r_game_playerpawn_move playerMove = new s2r_game_playerpawn_move ();
+      playerMove.NetLocation = packet.Position;
+      playerMove.NetVelocity = packet.Direction;
+      playerMove.RelevanceID = 56;
+      playerMove.MoveFrameID = packet.MoveFrameID;
+      playerMove.Physics = (byte) EPhysics.PHYS_Walking;
+      
+      Message testMove = playerMove.Generate ();
+      message.clientSocket.Send (testMove.data);
     }
 
     private static void HandleUpdateMovementWithPhysics (NetworkPlayer player, Message message)
@@ -226,13 +238,16 @@ namespace TCoSServer.GameServer.Network
       Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
       Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
       Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
-      Console.WriteLine ("[GS] Physics: {0}", packet.Physics);
+      Console.WriteLine ("[GS] Physics: {0}", (EPhysics)packet.Physics);
       Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
 
       //Temp test
       if (packet.FrameId == 1)
       {
         s2c_player_add addPlayer = new s2c_player_add ();
+        addPlayer.RelevanceID = 56;
+        addPlayer.PlayerPawn.Physics = (byte) EPhysics.PHYS_Walking;
+        addPlayer.PlayerPawn.PawnState = 1;
         addPlayer.FameLevel = 10;
         addPlayer.Concentration = 10;
         addPlayer.MaxHealth = 100;

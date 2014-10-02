@@ -12,14 +12,14 @@ namespace TCoSServer.GameServer.Network.Packets
     public int Unknown;
     public FVector Position;
     public FVector Direction;
-    public byte FrameId;
+    public byte MoveFrameID;
 
     protected override void InternalRead (MessageReader reader)
     {
       Unknown = reader.ReadInt32 ();
       Position = reader.ReadFVector ();
       Direction = reader.ReadFVector ();
-      FrameId = reader.ReadByte ();
+      MoveFrameID = reader.ReadByte ();
     }
   }
 }

@@ -80,10 +80,12 @@
     <Compile Include="GameServer\Network\Packets\disconnect.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_cs_create_character_ack.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_cs_login.cs" />
+    <Compile Include="GameServer\Network\Packets\s2c_game_actor_move.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_player_add.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_login.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_logout_ack.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_pre_login.cs" />
+    <Compile Include="GameServer\Network\Packets\s2r_game_playerpawn_move.cs" />
     <Compile Include="GameServer\Network\Packets\SBPacket.cs" />
     <Compile Include="GameServer\Network\Structures\s2r_game_combatstate_stream.cs" />
     <Compile Include="GameServer\Network\Structures\s2r_game_effects_stream.cs" />

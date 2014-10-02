@@ -9,7 +9,7 @@ namespace TCoSServer.GameServer.Network.Packets
 {
   class s2c_player_add : SBPacket
   {
-    public int Unknown1;
+    public int RelevanceID;
     public int Unknown2;
     public int MaxHealth;
     public float Physique;
@@ -30,7 +30,7 @@ namespace TCoSServer.GameServer.Network.Packets
       Message result = null;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_PLAYER_ADD))
       {
-        writer.Write (Unknown1);
+        writer.Write (RelevanceID);
         writer.Write (Unknown2);
         writer.Write (MaxHealth);
         writer.Write (Physique);
