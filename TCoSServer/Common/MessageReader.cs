@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using TCoSServer.GameServer.Network.Structures;
 
 namespace TCoSServer.Common
 {
@@ -92,6 +93,24 @@ namespace TCoSServer.Common
       byte[] array = bodyReader.ReadBytes (arraySize);
 
       return array;
+    }
+
+    public FVector ReadFVector ()
+    {
+      FVector result = new FVector ();
+      result.X = bodyReader.ReadSingle ();
+      result.Y = bodyReader.ReadSingle ();
+      result.Z = bodyReader.ReadSingle ();
+      return result;
+    }
+
+    public FRotator ReadFRotator ()
+    {
+      FRotator result = new FRotator ();
+      result.Yaw = bodyReader.ReadInt32 ();
+      result.Pitch = bodyReader.ReadInt32 ();
+      result.Roll = bodyReader.ReadInt32 ();
+      return result;
     }
 
     public void Dispose ()

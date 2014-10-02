@@ -8,6 +8,7 @@ using TCoSServer.GameServer.Network.Structures;
 using System.IO;
 using TCoSServer.GameServer.Network.Packets;
 using System.Diagnostics;
+using TCoSServer.GameServer.Gameplay;
 
 namespace TCoSServer.GameServer.Network
 {
@@ -37,6 +38,8 @@ namespace TCoSServer.GameServer.Network
       messageHandlers.Add (GameMessageIds.C2S_WORLD_PRE_LOGIN_ACK, HandleWorldPreLoginAck);
       messageHandlers.Add (GameMessageIds.C2S_CS_CREATE_CHARACTER, HandleCSCreateCharacter);
       messageHandlers.Add (GameMessageIds.C2S_CS_SELECT_CHARACTER, HandleCSSelectCharacter);
+      messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT, HandleUpdateMovement);
+      messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWITHPHYSICS, HandleUpdateMovementWithPhysics);
     }
 
     public NetworkPlayer (Socket clientSocket, uint transportKey)
@@ -51,7 +54,11 @@ namespace TCoSServer.GameServer.Network
       state.player = this;
 
       //Send world prelogin packet
-      SendWorldPrelogin (clientSocket);
+      //Dirty temporary cheat
+      if (GameServer.BypassCharacterScreen)
+        SendWorldPrelogin (clientSocket, World.PT_HAWKSMOUTH_ID);
+      else
+        SendWorldPrelogin (clientSocket);
 
       try
       {
@@ -87,7 +94,12 @@ namespace TCoSServer.GameServer.Network
         Console.WriteLine ("[GS] WARNING: NULL SOCKET");
         return;
       }
-      int bytesRead = handler.EndReceive (ar);
+      try
+      {
+        int bytesRead = handler.EndReceive (ar);
+      }
+      catch (SocketException)
+      { }
 
       using (MessageReader reader = new MessageReader (message))
       {
@@ -102,7 +114,12 @@ namespace TCoSServer.GameServer.Network
       catch (KeyNotFoundException)
       {
         Console.WriteLine ("[GS] Packet number {0} not implemented yet", message.id);
-        handler.Receive (message.data, message.size, SocketFlags.None);//Extract the data but do nothing
+        try
+        {
+          handler.Receive (message.data, message.size, SocketFlags.None);//Extract the data but do nothing
+        }
+        catch (SocketException)
+        { }
         if (message.id == 0)//Special case
           return;
       }
@@ -132,10 +149,11 @@ namespace TCoSServer.GameServer.Network
 
       if (GameServer.BypassCharacterScreen)
       {
-        //TODO
+        Console.WriteLine ("Connecting direct to world");
+        SendWorldLogin (message.clientSocket);
       }
-
-      SendCSLogin (player, message.clientSocket);
+      else
+        SendCSLogin (player, message.clientSocket);
     }
 
     private static void HandleCSCreateCharacter (NetworkPlayer player, Message message)
@@ -149,6 +167,9 @@ namespace TCoSServer.GameServer.Network
 
     private static void HandleCSSelectCharacter (NetworkPlayer player, Message message)
     {
+      Console.WriteLine ("[GS] Handle CS_SELECT_CHARACTER");
+      SendWorldPrelogin (message.clientSocket, World.PT_HAWKSMOUTH_ID);
+      SendWorldLogin (message.clientSocket);
     }
 
     private static void HandleDisconnect (NetworkPlayer player, Message message)
@@ -162,24 +183,56 @@ namespace TCoSServer.GameServer.Network
 
     private static void HandleWorldLogout (NetworkPlayer player, Message message)
     {
-      c2s_world_logout packet = new c2s_world_logout ();
-      packet.ReadFrom (message);
       Console.WriteLine ("[GS] Player send World Logout");
+      SendWorldLogoutAck (message.clientSocket);
       message.clientSocket.Close ();
     }
 
-    //Send messages
-    private static void SendWorldPrelogin (Socket clientSocket)
+    private static void HandleUpdateMovement (NetworkPlayer player, Message message)
     {
+      Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT");
+      c2s_game_playerpawn_cl2sv_updatemovement packet = new c2s_game_playerpawn_cl2sv_updatemovement ();
+      packet.ReadFrom (message);
+      Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
+      Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
+      Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
+      Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
+    }
+
+    private static void HandleUpdateMovementWithPhysics (NetworkPlayer player, Message message)
+    {
+      Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWHITHPHYSICS");
+      c2s_game_playerpawn_updatemovementwithpysics packet = new c2s_game_playerpawn_updatemovementwithpysics ();
+      packet.ReadFrom (message);
+      Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
+      Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
+      Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
+      Console.WriteLine ("[GS] Physics: {0}", packet.Physics);
+      Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
+    }
+
+    //Send messages
+    private static void SendWorldPrelogin (Socket clientSocket, int worldId = 1)
+    {
+      Console.WriteLine ("[GS] Send S2C_WORLD_PRE_LOGIN");
       s2c_world_pre_login preLogin = new s2c_world_pre_login ();
       preLogin.Unknwown = 0;
-      preLogin.WorldId = 1;
+      preLogin.WorldId = worldId;
       Message message = preLogin.Generate ();
+      clientSocket.Send (message.data);
+    }
+
+    private static void SendWorldLogoutAck (Socket clientSocket)
+    {
+      Console.WriteLine ("[GS] Send S2C_WORLD_LOGOUT_ACK");
+      s2c_world_logout_ack logout = new s2c_world_logout_ack ();
+      Message message = logout.Generate ();
       clientSocket.Send (message.data);
     }
 
     private static void SendCSLogin (NetworkPlayer nPlayer, Socket clientSocket)
     {
+      Console.WriteLine ("[GS] Send S2C_CS_LOGIN");
       s2c_cs_login message = new s2c_cs_login ();
       //Character creation screen
       if (nPlayer.player.getNumCharacters () == 0)
@@ -215,8 +268,46 @@ namespace TCoSServer.GameServer.Network
 
     private static void SendCSCreateCharacterAck (c2s_cs_create_character characterData, Socket clientSocket)
     {
+      Console.WriteLine ("[GS] Send S2C_CS_CREATE_CHARACTER_ACK");
       s2c_cs_create_character_ack ack = new s2c_cs_create_character_ack (characterData);
       Message message = ack.Generate ();
+      clientSocket.Send (message.data);
+    }
+
+    private static void SendWorldLogin (Socket clientSocket)
+    {
+      Console.WriteLine ("[GS] Send S2C_WORLD_LOGIN");
+      s2c_world_login worldLogin = new s2c_world_login ();
+      worldLogin.Unknown1 = 0;
+      worldLogin.ActorId = 0;
+      worldLogin.PawnStream = new sd_pawn_login_stream ();
+      worldLogin.PawnStream.BaseMoveSpeed = 2;
+      worldLogin.PawnStream.PhysicType = 1;
+      worldLogin.PawnStream.PawnState = 1;
+      worldLogin.PawnStream.Unknown7 = 1;
+
+      worldLogin.PlayerStatsStream = new sd_player_stat_stream ();
+      worldLogin.PlayerStatsStream.MoveSpeed = 100;
+      worldLogin.PlayerStatsStream.CurrentHealth = 100.0f;
+      worldLogin.PlayerStatsStream.CharacterStats = new sd_character_stats_record ();
+
+      worldLogin.CharacterInfo = new sd_base_character_info ();
+      worldLogin.CharacterInfo.CharacterData = new sd_character_data ();
+      worldLogin.CharacterInfo.CharacterSheetData = new sd_character_sheet_data ();
+      worldLogin.CharacterInfo.CharacterSheetData.ClassId = 2;
+      worldLogin.CharacterInfo.CharacterSheetData.Health = 100.0f;
+      worldLogin.CharacterInfo.CharacterSheetData.SelectedSkillDeckID = 0;
+
+      worldLogin.CharacterInfo.CharacterData.Name = "Tykaru";
+      worldLogin.CharacterInfo.CharacterData.Position = new FVector (0, 0, 6200);
+      worldLogin.CharacterInfo.CharacterData.WorldId = World.PT_HAWKSMOUTH_ID;
+      worldLogin.CharacterInfo.CharacterData.Dead = 0;
+      worldLogin.CharacterInfo.CharacterData.AppearancePart1 = 1;
+
+      worldLogin.UnknownSlider = 1;
+      worldLogin.PlayerGroup = 0;
+
+      Message message = worldLogin.Generate ();
       clientSocket.Send (message.data);
     }
   }
