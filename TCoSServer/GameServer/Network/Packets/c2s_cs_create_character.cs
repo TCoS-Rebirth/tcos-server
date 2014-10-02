@@ -7,7 +7,7 @@ using System.Collections;
 
 namespace TCoSServer.GameServer.Network.Packets
 {
-  struct c2s_cs_create_character
+  class c2s_cs_create_character : SBPacket
   {
     public string Name;
     public int ClassID;
@@ -19,7 +19,7 @@ namespace TCoSServer.GameServer.Network.Packets
     public int RangedWeaponIdDuplicated;
 
     //Lod0 
-    public byte voiceId ;
+    public byte VoiceId ;
     public byte RightArmTattooId;
     public byte LeftArmTattooId;
     public byte ChestTattooId;
@@ -81,20 +81,25 @@ namespace TCoSServer.GameServer.Network.Packets
     public byte TorsoColour2;
     public byte TorsoId;
     public byte HairColour;
-    public byte HairStyleId;
+    public byte HairTypeId;
     public byte BodyColour;
     public byte HeadTypeId;
     public byte BodyTypeId;
     public byte GenderId;
     public byte RaceId;
+
+    public byte[] Lod0;
+    public byte[] Lod1;
+    public byte[] Lod2;
+    public byte[] Lod3;
     
 
-    public void ReadFrom (MessageReader reader)
+    protected override void InternalRead (MessageReader reader)
     {
-      byte[] Lod0 = reader.ReadByteArray ();
-      byte[] Lod1 = reader.ReadByteArray ();
-      byte[] Lod2 = reader.ReadByteArray ();
-      byte[] Lod3 = reader.ReadByteArray ();
+      Lod0 = reader.ReadByteArray ();
+      Lod1 = reader.ReadByteArray ();
+      Lod2 = reader.ReadByteArray ();
+      Lod3 = reader.ReadByteArray ();
       Name = reader.ReadString ();
       ClassID = reader.ReadInt32 ();
       FixedSkill1Id = reader.ReadInt32 ();
@@ -103,6 +108,7 @@ namespace TCoSServer.GameServer.Network.Packets
       CustomSkill1Id = reader.ReadInt32 ();
       CustomSkill2Id = reader.ReadInt32 ();
       RangedWeaponIdDuplicated = reader.ReadInt32 ();
+      
 
       //Parse compressed data, reverse order is easier to understand
       Array.Reverse(Lod0);
@@ -121,7 +127,7 @@ namespace TCoSServer.GameServer.Network.Packets
       LeftGloveColour2 = Lod0[12];
 
       //Lod0 special stuff
-      voiceId = Lod0[0];
+      VoiceId = Lod0[0];
       RightArmTattooId = (byte) (Lod0[3] & 0x0F);
       LeftArmTattooId = (byte) ((Lod0[4] & 0xF0)>>4);
       ChestTattooId = (byte) (Lod0[4] & 0x0F);
@@ -243,7 +249,7 @@ namespace TCoSServer.GameServer.Network.Packets
       TorsoColour2 = (byte) ( (Lod3[3]<<7) | (Lod3[4]>>1) );
       TorsoId = (byte) ( (Lod3[4]<<7) | (Lod3[5]>>1) );
       HairColour = (byte) ( (Lod3[5]<<7) | (Lod3[6]>>1) );
-      HairStyleId = (byte) ( ((Lod3[6] & 0x01)<<5) | (Lod3[7]>>3) );
+      HairTypeId = (byte) ( ((Lod3[6] & 0x01)<<5) | (Lod3[7]>>3) );
       BodyColour = (byte) ( (Lod3[7]<<5) | (Lod3[8]>>3) );
       HeadTypeId = (byte) ( ((Lod3[8]&0x07)<<4) | ((Lod3[9] & 0xF0)>>4) );
       BodyTypeId = (byte) ((Lod3[9] & 0x0C)>>2);

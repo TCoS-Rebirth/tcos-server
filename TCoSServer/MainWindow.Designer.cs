@@ -40,6 +40,7 @@
       this.lblPort = new System.Windows.Forms.Label();
       this.txtGameWorldLogs = new System.Windows.Forms.RichTextBox();
       this.lblGameWorldLogs = new System.Windows.Forms.Label();
+      this.chkToWorld = new System.Windows.Forms.CheckBox();
       this.SuspendLayout();
       // 
       // txtLoginLogs
@@ -48,7 +49,7 @@
       this.txtLoginLogs.Name = "txtLoginLogs";
       this.txtLoginLogs.Size = new System.Drawing.Size(191, 294);
       this.txtLoginLogs.TabIndex = 0;
-      this.txtLoginLogs.Text = "";
+      this.txtLoginLogs.Text = "Not implemented yet. (logs are in console)";
       // 
       // lblLoginLogs
       // 
@@ -140,7 +141,7 @@
       this.txtGameWorldLogs.Name = "txtGameWorldLogs";
       this.txtGameWorldLogs.Size = new System.Drawing.Size(191, 294);
       this.txtGameWorldLogs.TabIndex = 10;
-      this.txtGameWorldLogs.Text = "";
+      this.txtGameWorldLogs.Text = "Not implemented yet. (logs are in console)";
       // 
       // lblGameWorldLogs
       // 
@@ -152,11 +153,23 @@
       this.lblGameWorldLogs.TabIndex = 11;
       this.lblGameWorldLogs.Text = "Game World Logs";
       // 
+      // chkToWorld
+      // 
+      this.chkToWorld.AutoSize = true;
+      this.chkToWorld.Location = new System.Drawing.Point(335, 74);
+      this.chkToWorld.Name = "chkToWorld";
+      this.chkToWorld.Size = new System.Drawing.Size(130, 17);
+      this.chkToWorld.TabIndex = 12;
+      this.chkToWorld.Text = "Connect direct to map";
+      this.chkToWorld.UseVisualStyleBackColor = true;
+      this.chkToWorld.CheckedChanged += new System.EventHandler(this.chkToWorld_CheckedChanged);
+      // 
       // MainWindow
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(814, 594);
+      this.Controls.Add(this.chkToWorld);
       this.Controls.Add(this.lblGameWorldLogs);
       this.Controls.Add(this.txtGameWorldLogs);
       this.Controls.Add(this.lblPort);
@@ -192,6 +205,7 @@
     private System.Windows.Forms.Label lblPort;
     private System.Windows.Forms.RichTextBox txtGameWorldLogs;
     private System.Windows.Forms.Label lblGameWorldLogs;
+    private System.Windows.Forms.CheckBox chkToWorld;
 
   }
 }

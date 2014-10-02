@@ -134,5 +134,11 @@ namespace TCoSServer
 
       switchGameButton ();
     }
+
+    private void chkToWorld_CheckedChanged (object sender, EventArgs e)
+    {
+      MessageBox.Show ("Not implemented yet ;)");
+      GameServer.GameServer.BypassCharacterScreen = true;
+    }
   }
 }
