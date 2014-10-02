@@ -6,7 +6,7 @@ using TCoSServer.Common;
 
 namespace TCoSServer.GameServer.Network.Structures
 {
-  struct sd_pawn_login_stream : SBStruct
+  struct sd_playerpawn_login_stream : SBStruct
   {
     public FVector NetVelocity;
     public FVector NetLocation;
