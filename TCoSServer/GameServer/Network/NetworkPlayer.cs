@@ -143,7 +143,6 @@ namespace TCoSServer.GameServer.Network
       {  }
     }
 
-    private static bool temporaryBugfix = false;//Will then be fixed with gameplay layer
     private static void HandleWorldPreLoginAck (NetworkPlayer player, Message message)
     {
       c2s_world_pre_login_ack preLoginAck = new c2s_world_pre_login_ack ();
@@ -152,13 +151,15 @@ namespace TCoSServer.GameServer.Network
 
       if (GameServer.BypassCharacterScreen)
       {
+        //There is no real gameplay layer currently so for now it's "fake code" holding properties
+        player.player.SetCurrentCharacterById (42);
+        player.player.CurrentCharacter.CurrentWorldID = World.PT_HAWKSMOUTH_ID;
         Console.WriteLine ("Connecting direct to world");
         SendWorldLogin (message.clientSocket);
       }
-      else if (!temporaryBugfix)
+      else if (player.player.CurrentCharacter == null)
       {
         SendCSLogin (player, message.clientSocket);
-        temporaryBugfix = true;
       }
       else
         SendWorldLogin (message.clientSocket);
@@ -189,7 +190,11 @@ namespace TCoSServer.GameServer.Network
     private static void HandleCSSelectCharacter (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle CS_SELECT_CHARACTER");
-      SendWorldPrelogin (message.clientSocket, World.PT_HAWKSMOUTH_ID);
+      c2s_cs_select_character select = new c2s_cs_select_character();
+      select.ReadFrom (message);
+      player.player.SetCurrentCharacterById (select.CharacterID);
+      player.player.CurrentCharacter.CurrentWorldID = World.PT_HAWKSMOUTH_ID;
+      SendWorldPrelogin (message.clientSocket, player.player.CurrentCharacter.CurrentWorldID);
     }
 
     private static void HandleDisconnect (NetworkPlayer player, Message message)
@@ -204,6 +209,8 @@ namespace TCoSServer.GameServer.Network
     private static void HandleWorldLogout (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Player send World Logout");
+      if (player.player.CurrentCharacter != null)
+       player.player.CurrentCharacter.CurrentWorldID = World.CHARACTER_SELECTION_ID;
       SendWorldLogoutAck (message.clientSocket);
       message.clientSocket.Close ();
     }
@@ -246,6 +253,7 @@ namespace TCoSServer.GameServer.Network
       {
         s2c_player_add addPlayer = new s2c_player_add ();
         addPlayer.RelevanceID = 56;
+        
         addPlayer.PlayerPawn.Physics = (byte) EPhysics.PHYS_Walking;
         addPlayer.PlayerPawn.PawnState = 1;
         addPlayer.FameLevel = 10;
@@ -271,6 +279,7 @@ namespace TCoSServer.GameServer.Network
         addPlayer.PlayerStats = new s2r_game_stats_add_stream ();
         addPlayer.PlayerStats.Health = 50;
         addPlayer.PlayerStats.MovementSpeed = 100;
+        addPlayer.PlayerStats.FrozenFlags = 8;
         Message testMessage = addPlayer.Generate ();
         message.clientSocket.Send (testMessage.data);
       }
@@ -348,7 +357,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PawnStream = new sd_playerpawn_login_stream ();
       worldLogin.PawnStream.BaseMoveSpeed = 2;
       worldLogin.PawnStream.PhysicType = 1;
-      worldLogin.PawnStream.PawnState = 1;
+      worldLogin.PawnStream.PawnState = (byte)EPhysics.PHYS_Walking;
       worldLogin.PawnStream.MoveFrameID = 1;
 
       worldLogin.PlayerStatsStream = new sd_player_stat_stream ();

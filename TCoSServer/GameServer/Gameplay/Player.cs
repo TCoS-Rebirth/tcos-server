@@ -12,24 +12,26 @@ namespace TCoSServer.GameServer.Gameplay
     /// <summary>
     /// Player account ID.
     /// </summary>
-    private uint accountID;
+    public uint AccountID { get; set; }
 
     /// <summary>
     /// Character currently played by the player.
     /// Determined by the choice in the character selection screen.
     /// </summary>
-    private Character currentCharacter;
+    public Character CurrentCharacter { get; set; }
 
     public Player ()
     {
       //TODO fill with DB data
-      accountID = 1;
-      currentCharacter = null;
+      AccountID = 1;
+      CurrentCharacter = null;
     }
 
     public void SetCurrentCharacterById (uint characterId)
     {
-      currentCharacter = new Character (characterId);
+      CurrentCharacter = new Character (characterId);
+      //TODO WITH DB
+      CurrentCharacter.CurrentWorldID = World.CHARACTER_SELECTION_ID;
     }
 
     //TODO

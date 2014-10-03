@@ -7,8 +7,8 @@ namespace TCoSServer.GameServer.Gameplay
 {
   class Character
   {
-    private uint id;
-    private uint currentWorldID;
+    public uint ID { get; set; }
+    public int CurrentWorldID { get; set; }
 
     //TODO
     public static void CreateNewCharacter ()
@@ -17,7 +17,7 @@ namespace TCoSServer.GameServer.Gameplay
 
     public Character (uint id)
     {
-      this.id = id;
+      this.ID = id;
     }
     
   }

@@ -65,12 +65,14 @@
     <Compile Include="Common\MessageReader.cs" />
     <Compile Include="Common\MessageWriter.cs" />
     <Compile Include="GameServer\Gameplay\Character.cs" />
+    <Compile Include="GameServer\Gameplay\Enums\EPhysics.cs" />
     <Compile Include="GameServer\Gameplay\Player.cs" />
     <Compile Include="GameServer\Gameplay\World.cs" />
     <Compile Include="GameServer\GameServer.cs" />
     <Compile Include="GameServer\Network\GameMessageId.cs" />
     <Compile Include="GameServer\Network\NetworkPlayer.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_cs_create_character.cs" />
+    <Compile Include="GameServer\Network\Packets\c2s_cs_select_character.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_cl2sv_updatemovement.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_updatemovementwithpysics.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_travel_connect.cs" />
