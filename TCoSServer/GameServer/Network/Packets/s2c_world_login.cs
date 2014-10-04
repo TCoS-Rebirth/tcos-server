@@ -9,7 +9,7 @@ namespace TCoSServer.GameServer.Network.Packets
 {
   class s2c_world_login : SBPacket
   {
-    public int Unknown1;
+    public int ZeroDWord;
     public int ActorId;
     public int Unknown2;
     public byte Unknown3;
@@ -34,7 +34,7 @@ namespace TCoSServer.GameServer.Network.Packets
       Message result = null;
       using (MessageWriter writer = new MessageWriter (GameMessageIds.S2C_WORLD_LOGIN))
       {
-        writer.Write (Unknown1);
+        writer.Write (ZeroDWord);
         writer.Write (ActorId);
         writer.Write (Unknown2);
         writer.Write (Unknown3);

@@ -28,7 +28,10 @@ namespace TCoSServer.GameServer.Network
     }
 
     private Gameplay.Player player;
+    private List<NetworkPlayer> replicationList;
+    private Socket ConnectionToClient;
     private delegate void HandleMessageCallback (NetworkPlayer player, Message message);
+    private Connection connection;
 
     private static Dictionary<GameMessageIds, HandleMessageCallback> messageHandlers;
 
@@ -44,9 +47,11 @@ namespace TCoSServer.GameServer.Network
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWITHPHYSICS, HandleUpdateMovementWithPhysics);
     }
 
-    public NetworkPlayer (Socket clientSocket, uint transportKey)
+    public NetworkPlayer (Socket clientSocket, uint transportKey, ref List<NetworkPlayer> replicationList)
     {
       player = findPlayerWithTransportKey (transportKey);
+      ConnectionToClient = clientSocket;
+      connection = new Connection (clientSocket);
 
       Message nextMessage = new Message();
       nextMessage.clientSocket = clientSocket;
@@ -54,13 +59,14 @@ namespace TCoSServer.GameServer.Network
       NetworkPlayerState state = new NetworkPlayerState ();
       state.message = nextMessage;
       state.player = this;
+      this.replicationList = replicationList;
 
       //Send world prelogin packet
       //Dirty temporary cheat
       if (GameServer.BypassCharacterScreen)
-        SendWorldPrelogin (clientSocket, World.PT_HAWKSMOUTH_ID);
+        SendWorldPrelogin (connection, World.PT_HAWKSMOUTH_ID);
       else
-        SendWorldPrelogin (clientSocket);
+        SendWorldPrelogin (connection);
 
       try
       {
@@ -143,6 +149,17 @@ namespace TCoSServer.GameServer.Network
       {  }
     }
 
+    //Handle sending all the replication messages to other players
+    private void NotifyReplication (Message toSend)
+    {
+      foreach (NetworkPlayer player in replicationList)
+      {
+        if (player.player.AccountID == this.player.AccountID)
+          continue;
+        player.connection.Send (toSend);
+      }
+    }
+
     private static void HandleWorldPreLoginAck (NetworkPlayer player, Message message)
     {
       c2s_world_pre_login_ack preLoginAck = new c2s_world_pre_login_ack ();
@@ -152,17 +169,17 @@ namespace TCoSServer.GameServer.Network
       if (GameServer.BypassCharacterScreen)
       {
         //There is no real gameplay layer currently so for now it's "fake code" holding properties
-        player.player.SetCurrentCharacterById (42);
+        player.player.SetCurrentCharacterById (lastId++);
         player.player.CurrentCharacter.CurrentWorldID = World.PT_HAWKSMOUTH_ID;
         Console.WriteLine ("Connecting direct to world");
-        SendWorldLogin (message.clientSocket);
+        SendWorldLogin (player);
       }
       else if (player.player.CurrentCharacter == null)
       {
-        SendCSLogin (player, message.clientSocket);
+        SendCSLogin (player);
       }
       else
-        SendWorldLogin (message.clientSocket);
+        SendWorldLogin (player);
     }
 
     //DEBUG REMOVE ME
@@ -170,6 +187,7 @@ namespace TCoSServer.GameServer.Network
     private static byte[] Lod1;
     private static byte[] Lod2;
     private static byte[] Lod3;
+    private static FVector pawnLocation = new FVector (500, 0, 6106.0f);
     private static void HandleCSCreateCharacter (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle CS_CREATE_CHARACTER");
@@ -184,7 +202,12 @@ namespace TCoSServer.GameServer.Network
       Array.Reverse (Lod2);
       Array.Reverse (Lod3);
 
-      SendCSCreateCharacterAck (createChar, message.clientSocket);
+      Character character = new Character (lastId++);
+      character.Name = createChar.Name;
+      Console.WriteLine ("[GS] New character with id: {0} and name: {1}", character.ID, character.Name);
+      player.player.AddNewCharacter (character);
+      player.player.SetCurrentCharacterById (character.ID);
+      SendCSCreateCharacterAck (createChar, player);
     }
 
     private static void HandleCSSelectCharacter (NetworkPlayer player, Message message)
@@ -194,7 +217,8 @@ namespace TCoSServer.GameServer.Network
       select.ReadFrom (message);
       player.player.SetCurrentCharacterById (select.CharacterID);
       player.player.CurrentCharacter.CurrentWorldID = World.PT_HAWKSMOUTH_ID;
-      SendWorldPrelogin (message.clientSocket, player.player.CurrentCharacter.CurrentWorldID);
+      Console.WriteLine ("[GS] Player connect with character: [{0}] {1}", player.player.CurrentCharacter.ID, player.player.CurrentCharacter.Name);
+      SendWorldPrelogin (player.connection, player.player.CurrentCharacter.CurrentWorldID);
     }
 
     private static void HandleDisconnect (NetworkPlayer player, Message message)
@@ -211,100 +235,75 @@ namespace TCoSServer.GameServer.Network
       Console.WriteLine ("[GS] Player send World Logout");
       if (player.player.CurrentCharacter != null)
        player.player.CurrentCharacter.CurrentWorldID = World.CHARACTER_SELECTION_ID;
-      SendWorldLogoutAck (message.clientSocket);
+      SendWorldLogoutAck (player.connection);
       message.clientSocket.Close ();
     }
 
     private static void HandleUpdateMovement (NetworkPlayer player, Message message)
     {
-      Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT");
+      //Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT");
       c2s_game_playerpawn_cl2sv_updatemovement packet = new c2s_game_playerpawn_cl2sv_updatemovement ();
       packet.ReadFrom (message);
-      Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
-      Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
-      Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
-      Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
+      player.player.CurrentCharacter.Position = packet.Position;
+      //Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
+      //Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
+      //Console.WriteLine ("[GS] Velocity: {0} {1} {2}", packet.Velocity.X, packet.Velocity.Y, packet.Velocity.Z);
+      //Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
 
       //Test 
-      s2r_game_playerpawn_move playerMove = new s2r_game_playerpawn_move ();
-      playerMove.NetLocation = packet.Position;
-      playerMove.NetVelocity = packet.Direction;
-      playerMove.RelevanceID = 56;
-      playerMove.MoveFrameID = packet.MoveFrameID;
-      playerMove.Physics = (byte) EPhysics.PHYS_Walking;
-      
-      Message testMove = playerMove.Generate ();
-      message.clientSocket.Send (testMove.data);
+      s2r_game_playerpawn_move playermove = new s2r_game_playerpawn_move ();
+      playermove.NetLocation = packet.Position;
+      playermove.NetVelocity = packet.Velocity;
+      playermove.RelevanceID = player.player.CurrentCharacter.ID; ;
+      playermove.MoveFrameID = packet.MoveFrameID;
+      playermove.Physics = MainWindow.PhysicMode;
+      player.NotifyReplication (playermove.Generate ());
     }
 
     private static void HandleUpdateMovementWithPhysics (NetworkPlayer player, Message message)
     {
-      Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWHITHPHYSICS");
+      //Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWITHPHYSICS");
       c2s_game_playerpawn_updatemovementwithpysics packet = new c2s_game_playerpawn_updatemovementwithpysics ();
       packet.ReadFrom (message);
-      Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
-      Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
-      Console.WriteLine ("[GS] Direction: {0} {1} {2}", packet.Direction.X, packet.Direction.Y, packet.Direction.Z);
-      Console.WriteLine ("[GS] Physics: {0}", (EPhysics)packet.Physics);
-      Console.WriteLine ("[GS] FrameID: {0}", packet.FrameId);
+      player.player.CurrentCharacter.Position = packet.Position;
 
-      //Temp test
-      if (packet.FrameId == 1)
-      {
-        s2c_player_add addPlayer = new s2c_player_add ();
-        addPlayer.RelevanceID = 56;
-        
-        addPlayer.PlayerPawn.Physics = (byte) EPhysics.PHYS_Walking;
-        addPlayer.PlayerPawn.PawnState = 1;
-        addPlayer.FameLevel = 10;
-        addPlayer.Concentration = 10;
-        addPlayer.MaxHealth = 100;
-        addPlayer.Morale = 5;
-        addPlayer.PepRank = 2;
-        addPlayer.Physique = 10;
-        addPlayer.PlayerAppearance = new s2r_game_playerappearance_add_stream ();
-        addPlayer.PlayerAppearance.Lod0 = Lod0;
-        addPlayer.PlayerAppearance.Lod1 = Lod1;
-        addPlayer.PlayerAppearance.Lod2 = Lod2;
-        addPlayer.PlayerAppearance.Lod3 = Lod3;
-        addPlayer.PlayerCharacter = new s2r_game_playercharacter_stream ();
-        addPlayer.PlayerCharacter.Name = "Evhien";
-        addPlayer.PlayerCharacter.FactionID = 1;
-        addPlayer.PlayerCombatState = new s2r_game_combatstate_stream ();
-        addPlayer.PlayerPawn = new s2r_game_playerpawn_add_stream ();
-        addPlayer.PlayerPawn.MoveFrameID = 0;
-        addPlayer.PlayerPawn.NetLocation = new FVector (500, 0, 6106.0f);
-        addPlayer.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
-        addPlayer.PlayerPawn.Physics = 1;
-        addPlayer.PlayerStats = new s2r_game_stats_add_stream ();
-        addPlayer.PlayerStats.Health = 50;
-        addPlayer.PlayerStats.MovementSpeed = 100;
-        addPlayer.PlayerStats.FrozenFlags = 8;
-        Message testMessage = addPlayer.Generate ();
-        message.clientSocket.Send (testMessage.data);
-      }
+      //Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
+      //Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
+      //Console.WriteLine ("[GS] Velocity: {0} {1} {2}", packet.Velocity.X, packet.Velocity.Y, packet.Velocity.Z);
+      //Console.WriteLine ("[GS] Physics: {0}", (EPhysics)packet.Physics);
+      //Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
+
+      //Test 
+      s2r_game_playerpawn_move playermove = new s2r_game_playerpawn_move ();
+      playermove.NetLocation = packet.Position;
+      playermove.NetVelocity = packet.Velocity;
+      playermove.RelevanceID = player.player.CurrentCharacter.ID;
+      playermove.MoveFrameID = packet.MoveFrameID;
+      playermove.Physics = packet.Physics;
+      player.NotifyReplication (playermove.Generate ());
     }
 
     //Send messages
-    private static void SendWorldPrelogin (Socket clientSocket, int worldId = 1)
+    private static void SendWorldPrelogin (Connection connection, int worldId = 1)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_PRE_LOGIN");
       s2c_world_pre_login preLogin = new s2c_world_pre_login ();
       preLogin.Unknwown = 0;
       preLogin.WorldId = worldId;
       Message message = preLogin.Generate ();
-      clientSocket.Send (message.data);
+      connection.Send (message);
     }
 
-    private static void SendWorldLogoutAck (Socket clientSocket)
+    private static void SendWorldLogoutAck (Connection connection)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGOUT_ACK");
       s2c_world_logout_ack logout = new s2c_world_logout_ack ();
       Message message = logout.Generate ();
-      clientSocket.Send (message.data);
+      connection.Send (message);
     }
 
-    private static void SendCSLogin (NetworkPlayer nPlayer, Socket clientSocket)
+    private static int lastId = 0;
+    private static void SendCSLogin (NetworkPlayer nPlayer)
     {
       Console.WriteLine ("[GS] Send S2C_CS_LOGIN");
       s2c_cs_login message = new s2c_cs_login ();
@@ -313,47 +312,53 @@ namespace TCoSServer.GameServer.Network
       {
         Message csLogin = message.Generate ();
 
-        clientSocket.Send (csLogin.data);
+        nPlayer.connection.Send (csLogin);
       }
       //Character selection screen
       else
       {
-        sd_base_character_info baseInfo = new sd_base_character_info ();
-        baseInfo.CharacterId = 42;
-
-        sd_character_data charData = new sd_character_data ();
-        charData.AccountId = 1;
-        charData.Name = "Mertyuiolpmoiuyt";
-
-        baseInfo.CharacterData = charData;
-
-        sd_character_sheet_data characterSheet = new sd_character_sheet_data ();
-        baseInfo.CharacterSheetData = characterSheet;
-        message.BaseCharacterInfo = new sd_base_character_info[1];
-        message.BaseCharacterInfo[0] = baseInfo;
-
+        int counter = 0;
         message.FameMap = new Dictionary<int, int> ();
-        message.FameMap.Add (42, 5);
+        foreach (Character character in nPlayer.player.Characters)
+        {
+          sd_base_character_info baseInfo = new sd_base_character_info ();
+          baseInfo.CharacterId = character.ID;
+
+          sd_character_data charData = new sd_character_data ();
+          charData.AccountId = nPlayer.player.AccountID;
+          charData.Name = character.Name;
+
+          baseInfo.CharacterData = charData;
+
+          sd_character_sheet_data characterSheet = new sd_character_sheet_data ();
+          baseInfo.CharacterSheetData = characterSheet;
+          message.BaseCharacterInfo = new sd_base_character_info[1];
+          message.BaseCharacterInfo[counter] = baseInfo;
+          message.FameMap.Add (baseInfo.CharacterId, 5);
+        }
 
         Message csLogin = message.Generate ();
-        clientSocket.Send (csLogin.data);
+        nPlayer.connection.Send (csLogin);
       }
     }
 
-    private static void SendCSCreateCharacterAck (c2s_cs_create_character characterData, Socket clientSocket)
+    private static void SendCSCreateCharacterAck (c2s_cs_create_character characterData, NetworkPlayer nPlayer)
     {
       Console.WriteLine ("[GS] Send S2C_CS_CREATE_CHARACTER_ACK");
       s2c_cs_create_character_ack ack = new s2c_cs_create_character_ack (characterData);
+      ack.CharacterInformation.CharacterId = nPlayer.player.CurrentCharacter.ID;
+      ack.CharacterInformation.CharacterData.AccountId = nPlayer.player.AccountID;
       Message message = ack.Generate ();
-      clientSocket.Send (message.data);
+      nPlayer.connection.Send (message);
     }
 
-    private static void SendWorldLogin (Socket clientSocket)
+    private static void SendWorldLogin (NetworkPlayer networkPlayer)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGIN");
+      networkPlayer.player.CurrentCharacter.Position = new FVector (0, 0, 6200);
       s2c_world_login worldLogin = new s2c_world_login ();
-      worldLogin.Unknown1 = 0;
-      worldLogin.ActorId = 1;
+      worldLogin.ZeroDWord = 0;
+      worldLogin.ActorId = networkPlayer.player.CurrentCharacter.ID;
       worldLogin.PawnStream = new sd_playerpawn_login_stream ();
       worldLogin.PawnStream.BaseMoveSpeed = 2;
       worldLogin.PawnStream.PhysicType = 1;
@@ -366,15 +371,15 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PlayerStatsStream.CharacterStats = new sd_character_stats_record ();
 
       worldLogin.CharacterInfo = new sd_base_character_info ();
-      worldLogin.CharacterInfo.CharacterId = 42;
+      worldLogin.CharacterInfo.CharacterId = networkPlayer.player.CurrentCharacter.ID;
       worldLogin.CharacterInfo.CharacterData = new sd_character_data ();
       worldLogin.CharacterInfo.CharacterSheetData = new sd_character_sheet_data ();
       worldLogin.CharacterInfo.CharacterSheetData.ClassId = 2;
       worldLogin.CharacterInfo.CharacterSheetData.Health = 100.0f;
       worldLogin.CharacterInfo.CharacterSheetData.SelectedSkillDeckID = 0;
 
-      worldLogin.CharacterInfo.CharacterData.Name = "Tykaru";
-      worldLogin.CharacterInfo.CharacterData.Position = new FVector (0, 0, 6200);
+      worldLogin.CharacterInfo.CharacterData.Name = networkPlayer.player.CurrentCharacter.Name;
+      worldLogin.CharacterInfo.CharacterData.Position = networkPlayer.player.CurrentCharacter.Position;
       worldLogin.CharacterInfo.CharacterData.WorldId = World.PT_HAWKSMOUTH_ID;
       worldLogin.CharacterInfo.CharacterData.Dead = 0;
       worldLogin.CharacterInfo.CharacterData.AppearancePart1 = 1;
@@ -383,7 +388,81 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PlayerGroup = 0;
 
       Message message = worldLogin.Generate ();
-      clientSocket.Send (message.data);
+      networkPlayer.connection.Send (message);
+
+      //Notify other players this player arrives
+      s2c_player_add addPlayer = new s2c_player_add ();
+      addPlayer.RelevanceID = networkPlayer.player.CurrentCharacter.ID;
+      addPlayer.Unknown2 = MainWindow.UnkownValue;
+      addPlayer.FameLevel = 10;
+      addPlayer.Concentration = 10;
+      addPlayer.MaxHealth = 100;
+      addPlayer.Morale = 5;
+      addPlayer.PepRank = 2;
+      addPlayer.Physique = 10;
+      addPlayer.PlayerAppearance = new s2r_game_playerappearance_add_stream ();
+      addPlayer.PlayerAppearance.Lod0 = Lod0;
+      addPlayer.PlayerAppearance.Lod1 = Lod1;
+      addPlayer.PlayerAppearance.Lod2 = Lod2;
+      addPlayer.PlayerAppearance.Lod3 = Lod3;
+      addPlayer.PlayerCharacter = new s2r_game_playercharacter_stream ();
+      addPlayer.PlayerCharacter.Name = networkPlayer.player.CurrentCharacter.Name;
+      addPlayer.PlayerCharacter.FactionID = 1;
+      addPlayer.PlayerCombatState = new s2r_game_combatstate_stream ();
+      addPlayer.PlayerPawn = new s2r_game_playerpawn_add_stream ();
+      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_Interpolating;
+      addPlayer.PlayerPawn.PawnState = 1;
+      addPlayer.PlayerPawn.DebugFilters = 0;
+      addPlayer.PlayerPawn.GroundSpeedModifier = 100;
+      addPlayer.PlayerPawn.MoveFrameID = 0;
+      addPlayer.PlayerPawn.NetLocation = networkPlayer.player.CurrentCharacter.Position;
+      addPlayer.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
+      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_None;
+      addPlayer.PlayerStats = new s2r_game_stats_add_stream ();
+      addPlayer.PlayerStats.Health = 50;
+      addPlayer.PlayerStats.MovementSpeed = 100;
+      addPlayer.PlayerStats.FrozenFlags = 0;
+      Message testMessage = addPlayer.Generate ();
+      networkPlayer.NotifyReplication (testMessage);
+
+      //Notify this player of other players
+      foreach (NetworkPlayer player in networkPlayer.replicationList)
+      {
+        if (player.player.AccountID == networkPlayer.player.AccountID
+          || player.player.CurrentCharacter == null /*character creation phase*/)
+          continue;
+        s2c_player_add addPlayerTwo = new s2c_player_add ();
+        addPlayerTwo.RelevanceID = player.player.CurrentCharacter.ID;
+        addPlayerTwo.Unknown2 = 5;
+        addPlayerTwo.FameLevel = 10;
+        addPlayerTwo.Concentration = 10;
+        addPlayerTwo.MaxHealth = 100;
+        addPlayerTwo.Morale = 5;
+        addPlayerTwo.PepRank = 2;
+        addPlayerTwo.Physique = 10;
+        addPlayerTwo.PlayerAppearance = new s2r_game_playerappearance_add_stream ();
+        addPlayerTwo.PlayerAppearance.Lod0 = Lod0;
+        addPlayerTwo.PlayerAppearance.Lod1 = Lod1;
+        addPlayerTwo.PlayerAppearance.Lod2 = Lod2;
+        addPlayerTwo.PlayerAppearance.Lod3 = Lod3;
+        addPlayerTwo.PlayerCharacter = new s2r_game_playercharacter_stream ();
+        addPlayerTwo.PlayerCharacter.Name = player.player.CurrentCharacter.Name;
+        addPlayerTwo.PlayerCharacter.FactionID = 1;
+        addPlayerTwo.PlayerCombatState = new s2r_game_combatstate_stream ();
+        addPlayerTwo.PlayerPawn = new s2r_game_playerpawn_add_stream ();
+        addPlayerTwo.PlayerPawn.Physics = (byte)EPhysics.PHYS_Interpolating;
+        addPlayerTwo.PlayerPawn.PawnState = 1;
+        addPlayerTwo.PlayerPawn.MoveFrameID = 0;
+        addPlayerTwo.PlayerPawn.NetLocation = player.player.CurrentCharacter.Position;
+        addPlayerTwo.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
+        addPlayerTwo.PlayerStats = new s2r_game_stats_add_stream ();
+        addPlayerTwo.PlayerStats.Health = 50;
+        addPlayerTwo.PlayerStats.MovementSpeed = 100;
+        addPlayerTwo.PlayerPawn.GroundSpeedModifier = 100;
+        addPlayerTwo.PlayerStats.FrozenFlags = 0;
+        Message testMessage2 = addPlayerTwo.Generate ();
+        networkPlayer.connection.Send (testMessage2);
+      }
     }
   }
 }

@@ -22,6 +22,11 @@ namespace TCoSServer
     private bool loginPortFilled = false;
     private bool gameWorldIpFilled = false;
     private bool gameWorldPortFilled = false;
+
+    //DEBUG REMOVE ME
+    public static byte PhysicMode = 0;
+    public static Int32 UnkownValue = 0;
+    public static byte FrozenFlags = 0;
  
     public MainWindow ()
     {
@@ -137,7 +142,22 @@ namespace TCoSServer
 
     private void chkToWorld_CheckedChanged (object sender, EventArgs e)
     {
-      GameServer.GameServer.BypassCharacterScreen = true;
+      GameServer.GameServer.BypassCharacterScreen = !GameServer.GameServer.BypassCharacterScreen;
+    }
+
+    private void comboBox1_SelectedIndexChanged (object sender, EventArgs e)
+    {
+      PhysicMode = (byte)comboBox1.SelectedIndex;
+    }
+
+    private void textBox1_TextChanged (object sender, EventArgs e)
+    {
+      UnkownValue = Int32.Parse (textBox1.Text);
+    }
+
+    private void textBox2_TextChanged (object sender, EventArgs e)
+    {
+      FrozenFlags = Byte.Parse(textBox2.Text);
     }
   }
 }

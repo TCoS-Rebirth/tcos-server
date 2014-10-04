@@ -11,17 +11,17 @@ namespace TCoSServer.GameServer.Network.Packets
   {
     public int Unknown;
     public FVector Position;
-    public FVector Direction;
+    public FVector Velocity;
     public byte Physics;
-    public byte FrameId;
+    public byte MoveFrameID;
 
     protected override void InternalRead (MessageReader reader)
     {
       Unknown = reader.ReadInt32 ();
       Position = reader.ReadFVector ();
-      Direction = reader.ReadFVector ();
+      Velocity = reader.ReadFVector ();
       Physics = reader.ReadByte ();
-      FrameId = reader.ReadByte ();
+      MoveFrameID = reader.ReadByte ();
     }
   }
 }

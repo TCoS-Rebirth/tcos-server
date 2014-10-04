@@ -159,7 +159,7 @@ namespace TCoSServer.GameServer
           return;
         }
         uint transportKey = reader.ReadUInt32 ();
-        NetworkPlayer player = new NetworkPlayer (message.clientSocket, transportKey);
+        NetworkPlayer player = new NetworkPlayer (message.clientSocket, transportKey, ref playersList);
         playersList.Add (player);
       }
     }

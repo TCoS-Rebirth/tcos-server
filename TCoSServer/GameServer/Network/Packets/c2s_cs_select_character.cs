@@ -8,11 +8,11 @@ namespace TCoSServer.GameServer.Network.Packets
 {
   class c2s_cs_select_character : SBPacket
   {
-    public uint CharacterID;
+    public int CharacterID;
 
     protected override void InternalRead (MessageReader reader)
     {
-      CharacterID = reader.ReadUInt32 ();
+      CharacterID = reader.ReadInt32 ();
     }
 
   }

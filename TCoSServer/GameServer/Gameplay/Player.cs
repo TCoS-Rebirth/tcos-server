@@ -7,42 +7,59 @@ namespace TCoSServer.GameServer.Gameplay
 {
   class Player
   {
-    public const uint NO_CHARACTER = 0;
+    public const int NO_CHARACTER = 0;
 
     /// <summary>
     /// Player account ID.
     /// </summary>
-    public uint AccountID { get; set; }
+    public int AccountID { get; set; }
 
     /// <summary>
     /// Character currently played by the player.
     /// Determined by the choice in the character selection screen.
     /// </summary>
     public Character CurrentCharacter { get; set; }
+    public Character[] Characters
+    {
+      get
+      {
+        return Characters.ToArray<Character> ();
+      }
+    }
+
+    private Dictionary<int, Character> characters;
 
     public Player ()
     {
       //TODO fill with DB data
-      AccountID = 1;
       CurrentCharacter = null;
+      characters = new Dictionary<int, Character> (20);
+      AccountID = new Random ().Next ();
     }
 
-    public void SetCurrentCharacterById (uint characterId)
+    public void SetCurrentCharacterById (int characterId)
     {
-      CurrentCharacter = new Character (characterId);
+      if (characters.ContainsKey (characterId))
+        CurrentCharacter = characters[characterId];
+      else
+      {
+        CurrentCharacter = new Character (characterId);
+        characters.Add (characterId, CurrentCharacter);
+      }
       //TODO WITH DB
       CurrentCharacter.CurrentWorldID = World.CHARACTER_SELECTION_ID;
     }
 
     //TODO
-    public void AddNewCharacter ()
+    public void AddNewCharacter (Character newCharacter)
     {
+      characters.Add (newCharacter.ID, newCharacter);
     }
 
     //TODO
-    public uint getNumCharacters ()
+    public int getNumCharacters ()
     {
-      return 0;
+      return characters.Count;
     }
 
   }

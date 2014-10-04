@@ -17,10 +17,8 @@ namespace TCoSServer.GameServer.Network.Packets
     {
       Status = 0;
       CharacterInformation = new sd_base_character_info ();
-      CharacterInformation.CharacterId = 42;
 
       CharacterInformation.CharacterData = new sd_character_data ();
-      CharacterInformation.CharacterData.AccountId = 0;
       CharacterInformation.CharacterData.Dead = 1;
       CharacterInformation.CharacterData.FactionId = 1;
       CharacterInformation.CharacterData.LastUsedTimeStamp = 0;
