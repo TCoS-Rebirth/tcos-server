@@ -30,6 +30,16 @@ namespace TCoSServer.GameServer.Network.Structures
       this.Yaw = yaw; this.Pitch = pitch; this.Roll = roll;
     }
 
+    public static FRotator Decompress (int CompressedRotator)
+    {
+      FRotator DecompressedRotator = new FRotator();
+      DecompressedRotator.Pitch = CompressedRotator <<8;
+      DecompressedRotator.Yaw = (2 * (CompressedRotator - (32768 * DecompressedRotator.Pitch)));
+      DecompressedRotator.Pitch *= 2;
+      DecompressedRotator.Roll = ((CompressedRotator << 8) | CompressedRotator);
+      return DecompressedRotator;
+    }
+
     public void WriteTo (MessageWriter writer)
     {
       writer.Write (Yaw);

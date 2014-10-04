@@ -78,6 +78,7 @@
     <Compile Include="GameServer\Network\Packets\c2s_cs_create_character.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_cs_select_character.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_cl2sv_updatemovement.cs" />
+    <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_cl2sv_updaterotation.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_updatemovementwithpysics.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_travel_connect.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_world_logout.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="GameServer\Network\Packets\s2c_world_logout_ack.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_pre_login.cs" />
     <Compile Include="GameServer\Network\Packets\s2r_game_playerpawn_move.cs" />
+    <Compile Include="GameServer\Network\Packets\s2r_game_playerpawn_updaterotation.cs" />
     <Compile Include="GameServer\Network\Packets\SBPacket.cs" />
     <Compile Include="GameServer\Network\Structures\s2r_game_combatstate_stream.cs" />
     <Compile Include="GameServer\Network\Structures\s2r_game_effects_stream.cs" />

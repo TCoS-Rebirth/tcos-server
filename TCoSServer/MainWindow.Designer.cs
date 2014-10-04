@@ -41,9 +41,6 @@
       this.txtGameWorldLogs = new System.Windows.Forms.RichTextBox();
       this.lblGameWorldLogs = new System.Windows.Forms.Label();
       this.chkToWorld = new System.Windows.Forms.CheckBox();
-      this.comboBox1 = new System.Windows.Forms.ComboBox();
-      this.textBox1 = new System.Windows.Forms.TextBox();
-      this.textBox2 = new System.Windows.Forms.TextBox();
       this.SuspendLayout();
       // 
       // txtLoginLogs
@@ -167,63 +164,11 @@
       this.chkToWorld.UseVisualStyleBackColor = true;
       this.chkToWorld.CheckedChanged += new System.EventHandler(this.chkToWorld_CheckedChanged);
       // 
-      // comboBox1
-      // 
-      this.comboBox1.FormattingEnabled = true;
-      this.comboBox1.Items.AddRange(new object[] {
-            "    PHYS_None = 0,",
-            "    PHYS_Walking = 1,",
-            "    PHYS_Falling = 2,",
-            "    PHYS_Swimming = 3,",
-            "    PHYS_Flying = 4,",
-            "    PHYS_Rotating = 5,",
-            "    PHYS_Projectile = 6,",
-            "    PHYS_Interpolating = 7,",
-            "    PHYS_MovingBrush = 8,",
-            "    PHYS_Spider = 9,",
-            "    PHYS_Trailer = 10,",
-            "    PHYS_Ladder = 11,",
-            "    PHYS_RootMotion = 12,",
-            "    PHYS_Karma = 13,",
-            "    PHYS_KarmaRagDoll = 14,",
-            "    PHYS_Hovering = 15,",
-            "    PHYS_CinMotion = 16,",
-            "    PHYS_DragonFlying = 17,",
-            "    PHYS_Jumping = 18,",
-            "    PHYS_SitGround = 19,",
-            "    PHYS_SitChair = 20,",
-            "    PHYS_Submerged = 21,",
-            "    PHYS_Turret = 22"});
-      this.comboBox1.Location = new System.Drawing.Point(527, 97);
-      this.comboBox1.Name = "comboBox1";
-      this.comboBox1.Size = new System.Drawing.Size(121, 21);
-      this.comboBox1.TabIndex = 13;
-      this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
-      // 
-      // textBox1
-      // 
-      this.textBox1.Location = new System.Drawing.Point(527, 138);
-      this.textBox1.Name = "textBox1";
-      this.textBox1.Size = new System.Drawing.Size(100, 20);
-      this.textBox1.TabIndex = 14;
-      this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
-      // 
-      // textBox2
-      // 
-      this.textBox2.Location = new System.Drawing.Point(527, 178);
-      this.textBox2.Name = "textBox2";
-      this.textBox2.Size = new System.Drawing.Size(100, 20);
-      this.textBox2.TabIndex = 15;
-      this.textBox2.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
-      // 
       // MainWindow
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(814, 594);
-      this.Controls.Add(this.textBox2);
-      this.Controls.Add(this.textBox1);
-      this.Controls.Add(this.comboBox1);
       this.Controls.Add(this.chkToWorld);
       this.Controls.Add(this.lblGameWorldLogs);
       this.Controls.Add(this.txtGameWorldLogs);
@@ -261,9 +206,6 @@
     private System.Windows.Forms.RichTextBox txtGameWorldLogs;
     private System.Windows.Forms.Label lblGameWorldLogs;
     private System.Windows.Forms.CheckBox chkToWorld;
-    private System.Windows.Forms.ComboBox comboBox1;
-    private System.Windows.Forms.TextBox textBox1;
-    private System.Windows.Forms.TextBox textBox2;
 
   }
 }

@@ -45,6 +45,7 @@ namespace TCoSServer.GameServer.Network
       messageHandlers.Add (GameMessageIds.C2S_CS_SELECT_CHARACTER, HandleCSSelectCharacter);
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT, HandleUpdateMovement);
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWITHPHYSICS, HandleUpdateMovementWithPhysics);
+      messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEROTATION, HandleUpdateRotation);
     }
 
     public NetworkPlayer (Socket clientSocket, uint transportKey, ref List<NetworkPlayer> replicationList)
@@ -245,10 +246,6 @@ namespace TCoSServer.GameServer.Network
       c2s_game_playerpawn_cl2sv_updatemovement packet = new c2s_game_playerpawn_cl2sv_updatemovement ();
       packet.ReadFrom (message);
       player.player.CurrentCharacter.Position = packet.Position;
-      //Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
-      //Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
-      //Console.WriteLine ("[GS] Velocity: {0} {1} {2}", packet.Velocity.X, packet.Velocity.Y, packet.Velocity.Z);
-      //Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
 
       //Test 
       s2r_game_playerpawn_move playermove = new s2r_game_playerpawn_move ();
@@ -256,7 +253,7 @@ namespace TCoSServer.GameServer.Network
       playermove.NetVelocity = packet.Velocity;
       playermove.RelevanceID = player.player.CurrentCharacter.ID; ;
       playermove.MoveFrameID = packet.MoveFrameID;
-      playermove.Physics = MainWindow.PhysicMode;
+      playermove.Physics = (byte) EPhysics.PHYS_Walking;
       player.NotifyReplication (playermove.Generate ());
     }
 
@@ -267,12 +264,6 @@ namespace TCoSServer.GameServer.Network
       packet.ReadFrom (message);
       player.player.CurrentCharacter.Position = packet.Position;
 
-      //Console.WriteLine ("[GS] Unknown dword: {0}", packet.Unknown);
-      //Console.WriteLine ("[GS] Position: {0} {1} {2}", packet.Position.X, packet.Position.Y, packet.Position.Z);
-      //Console.WriteLine ("[GS] Velocity: {0} {1} {2}", packet.Velocity.X, packet.Velocity.Y, packet.Velocity.Z);
-      //Console.WriteLine ("[GS] Physics: {0}", (EPhysics)packet.Physics);
-      //Console.WriteLine ("[GS] FrameID: {0}", packet.MoveFrameID);
-
       //Test 
       s2r_game_playerpawn_move playermove = new s2r_game_playerpawn_move ();
       playermove.NetLocation = packet.Position;
@@ -281,6 +272,18 @@ namespace TCoSServer.GameServer.Network
       playermove.MoveFrameID = packet.MoveFrameID;
       playermove.Physics = packet.Physics;
       player.NotifyReplication (playermove.Generate ());
+    }
+
+    private static void HandleUpdateRotation (NetworkPlayer player, Message message)
+    {
+      Console.WriteLine ("[GS] Handle C2S_GAME_PLAYERPAWN_CL2SV_UPDATEROTATION");
+      c2s_game_playerpawn_cl2sv_updaterotation rotation = new c2s_game_playerpawn_cl2sv_updaterotation ();
+      rotation.ReadFrom (message);
+
+      s2r_game_playerpawn_updaterotation notifyRotation = new s2r_game_playerpawn_updaterotation ();
+      notifyRotation.RelevanceID = rotation.CharacterID;
+      notifyRotation.CompressedRotator = rotation.CompressedRotator;
+      player.NotifyReplication (notifyRotation.Generate ());
     }
 
     //Send messages
@@ -393,7 +396,7 @@ namespace TCoSServer.GameServer.Network
       //Notify other players this player arrives
       s2c_player_add addPlayer = new s2c_player_add ();
       addPlayer.RelevanceID = networkPlayer.player.CurrentCharacter.ID;
-      addPlayer.Unknown2 = MainWindow.UnkownValue;
+      addPlayer.Unknown2 = 0;
       addPlayer.FameLevel = 10;
       addPlayer.Concentration = 10;
       addPlayer.MaxHealth = 100;
@@ -410,7 +413,7 @@ namespace TCoSServer.GameServer.Network
       addPlayer.PlayerCharacter.FactionID = 1;
       addPlayer.PlayerCombatState = new s2r_game_combatstate_stream ();
       addPlayer.PlayerPawn = new s2r_game_playerpawn_add_stream ();
-      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_Interpolating;
+      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_Walking;
       addPlayer.PlayerPawn.PawnState = 1;
       addPlayer.PlayerPawn.DebugFilters = 0;
       addPlayer.PlayerPawn.GroundSpeedModifier = 100;
@@ -450,7 +453,7 @@ namespace TCoSServer.GameServer.Network
         addPlayerTwo.PlayerCharacter.FactionID = 1;
         addPlayerTwo.PlayerCombatState = new s2r_game_combatstate_stream ();
         addPlayerTwo.PlayerPawn = new s2r_game_playerpawn_add_stream ();
-        addPlayerTwo.PlayerPawn.Physics = (byte)EPhysics.PHYS_Interpolating;
+        addPlayerTwo.PlayerPawn.Physics = (byte)EPhysics.PHYS_Walking;
         addPlayerTwo.PlayerPawn.PawnState = 1;
         addPlayerTwo.PlayerPawn.MoveFrameID = 0;
         addPlayerTwo.PlayerPawn.NetLocation = player.player.CurrentCharacter.Position;
