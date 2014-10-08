@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C# Express 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2012 for Windows Desktop
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TCoSServer", "TCoSServer\TCoSServer.csproj", "{0A2C0E52-42DE-4B56-9368-C6AC1676D1CD}"
 EndProject
 Global

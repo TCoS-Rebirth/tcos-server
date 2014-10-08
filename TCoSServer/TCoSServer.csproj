@@ -61,6 +61,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\Command.cs" />
+    <Compile Include="Command\CommandHandler.cs" />
+    <Compile Include="Command\Parser.cs" />
+    <Compile Include="Command\SimpleCommandWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Command\SimpleCommandWindow.Designer.cs">
+      <DependentUpon>SimpleCommandWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Common\Message.cs" />
     <Compile Include="Common\MessageReader.cs" />
     <Compile Include="Common\MessageWriter.cs" />
@@ -96,6 +105,9 @@
     <Compile Include="Login\LoginServer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Command\SimpleCommandWindow.resx">
+      <DependentUpon>SimpleCommandWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainWindow.resx">
       <DependentUpon>MainWindow.cs</DependentUpon>
     </EmbeddedResource>
