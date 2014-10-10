@@ -77,6 +77,7 @@
     <Compile Include="GameServer\Network\NetworkPlayer.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_cs_create_character.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_cs_select_character.cs" />
+    <Compile Include="GameServer\Network\Packets\c2s_game_chat_cl2sv_sendmessage.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_cl2sv_updatemovement.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_cl2sv_updaterotation.cs" />
     <Compile Include="GameServer\Network\Packets\c2s_game_playerpawn_updatemovementwithpysics.cs" />
@@ -85,9 +86,13 @@
     <Compile Include="GameServer\Network\Packets\c2s_world_pre_login_ack.cs" />
     <Compile Include="GameServer\Network\Packets\connect.cs" />
     <Compile Include="GameServer\Network\Packets\disconnect.cs" />
+    <Compile Include="GameServer\Network\Packets\s2c_interactivelevelelement_add.cs" />
+    <Compile Include="GameServer\Network\Packets\s2r_game_pawn_sv2clrel_teleportto.cs" />
+    <Compile Include="GameServer\Network\Structures\s2c_character_playercontroller_login_stream.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_cs_create_character_ack.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_cs_login.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_game_actor_move.cs" />
+    <Compile Include="GameServer\Network\Packets\s2c_game_chat_sv2cl_onmessage.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_player_add.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_login.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_world_logout_ack.cs" />
@@ -107,7 +112,7 @@
     <Compile Include="GameServer\Network\Structures\sd_character_sheet_data.cs" />
     <Compile Include="GameServer\Network\Structures\sd_character_stats_record.cs" />
     <Compile Include="GameServer\Network\Structures\sd_item.cs" />
-    <Compile Include="GameServer\Network\Structures\sd_playerpawn_login_stream.cs" />
+    <Compile Include="GameServer\Network\Structures\s2c_game_playerpawn_login_stream.cs" />
     <Compile Include="GameServer\Network\Structures\sd_player_stat_stream.cs" />
     <Compile Include="GameServer\Network\Structures\sd_quest.cs" />
     <Compile Include="GameServer\Network\Structures\sd_skill.cs" />

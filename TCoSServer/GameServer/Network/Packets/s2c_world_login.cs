@@ -10,9 +10,8 @@ namespace TCoSServer.GameServer.Network.Packets
   class s2c_world_login : SBPacket
   {
     public int ZeroDWord;
-    public int ActorId;
-    public int Unknown2;
-    public byte Unknown3;
+    public int ActorId;//= RelevanceID
+    public s2c_character_playercontroller_login_stream PlayerControllerStream;
     public sd_playerpawn_login_stream PawnStream;
     public sd_player_stat_stream PlayerStatsStream;
     public int UnknownSlider;
@@ -36,8 +35,7 @@ namespace TCoSServer.GameServer.Network.Packets
       {
         writer.Write (ZeroDWord);
         writer.Write (ActorId);
-        writer.Write (Unknown2);
-        writer.Write (Unknown3);
+        writer.Write (PlayerControllerStream);
         writer.Write (PawnStream);
         writer.Write (PlayerStatsStream);
         writer.Write (UnknownSlider);

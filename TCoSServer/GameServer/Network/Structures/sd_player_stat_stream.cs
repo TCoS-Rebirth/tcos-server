@@ -10,7 +10,7 @@ namespace TCoSServer.GameServer.Network.Structures
   {
     public float FamePoints;
     public float PepPoints;
-    public int Unknown1;
+    public int MayChooseClassBitfield;
     public byte RemainingAttributePoints;
     public float CurrentHealth;
     public byte CameraMode;
@@ -21,7 +21,7 @@ namespace TCoSServer.GameServer.Network.Structures
     {
       writer.Write (FamePoints);
       writer.Write (PepPoints);
-      writer.Write (Unknown1);
+      writer.Write (MayChooseClassBitfield);
       writer.Write (RemainingAttributePoints);
       writer.Write (CurrentHealth);
       writer.Write (CameraMode);

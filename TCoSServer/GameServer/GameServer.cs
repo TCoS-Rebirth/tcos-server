@@ -33,6 +33,12 @@ namespace TCoSServer.GameServer
 
     List<NetworkPlayer> playersList;
 
+    public void DebugSendMessageToEveryone (Message message)
+    {
+      foreach (NetworkPlayer player in playersList)
+        player.SendMessage (message);
+    }
+
     public GameServer (string ipAddress, string port)
     {
       valid = true;

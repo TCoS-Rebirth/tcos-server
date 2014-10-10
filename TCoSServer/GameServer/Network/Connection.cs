@@ -42,10 +42,14 @@ namespace TCoSServer.GameServer.Network
       {
         try
         {
-          Message toSend = (Message) messagesToSend.Dequeue ();
+          Message toSend = (Message)messagesToSend.Dequeue ();
           connectionToClient.Send (toSend.data);
         }
         catch (InvalidOperationException)
+        {
+          break;
+        }
+        catch (SocketException)
         {
           break;
         }

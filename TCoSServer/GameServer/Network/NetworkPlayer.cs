@@ -46,6 +46,7 @@ namespace TCoSServer.GameServer.Network
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENT, HandleUpdateMovement);
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEMOVEMENTWITHPHYSICS, HandleUpdateMovementWithPhysics);
       messageHandlers.Add (GameMessageIds.C2S_GAME_PLAYERPAWN_CL2SV_UPDATEROTATION, HandleUpdateRotation);
+      messageHandlers.Add (GameMessageIds.C2S_GAME_CHAT_CL2SV_SENDMESSAGE, HandleChatMessage);
     }
 
     public NetworkPlayer (Socket clientSocket, uint transportKey, ref List<NetworkPlayer> replicationList)
@@ -77,6 +78,11 @@ namespace TCoSServer.GameServer.Network
       }
       catch (ObjectDisposedException)
       { }
+    }
+
+    public void SendMessage (Message message)
+    {
+      connection.Send (message);
     }
 
     private Gameplay.Player findPlayerWithTransportKey (uint transportKey)
@@ -286,6 +292,21 @@ namespace TCoSServer.GameServer.Network
       player.NotifyReplication (notifyRotation.Generate ());
     }
 
+    private static void HandleChatMessage (NetworkPlayer player, Message message)
+    {
+      Console.WriteLine ("[GS] Handle C2S_GAME_CHAT_CL2SV_SENDMESSAGE");
+      c2s_game_chat_cl2sv_sendmessage packet = new c2s_game_chat_cl2sv_sendmessage ();
+      packet.ReadFrom (message);
+      Console.WriteLine ("{0} sends {1} on {2} to {3}",
+      packet.CharacterID, packet.Message, packet.Channel, packet.Receiver);
+
+      s2c_game_chat_sv2cl_onmessage answer = new s2c_game_chat_sv2cl_onmessage ();
+      answer.Sender = player.player.CurrentCharacter.Name;
+      answer.Message = packet.Message;
+      answer.Unknown = packet.CharacterID;
+      player.NotifyReplication (answer.Generate ());
+    }
+
     //Send messages
     private static void SendWorldPrelogin (Connection connection, int worldId = 1)
     {
@@ -358,10 +379,11 @@ namespace TCoSServer.GameServer.Network
     private static void SendWorldLogin (NetworkPlayer networkPlayer)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGIN");
-      networkPlayer.player.CurrentCharacter.Position = new FVector (0, 0, 6200);
+      networkPlayer.player.CurrentCharacter.Position = new FVector (-15102.36f, -7615.43f, 8004.88f);
       s2c_world_login worldLogin = new s2c_world_login ();
       worldLogin.ZeroDWord = 0;
       worldLogin.ActorId = networkPlayer.player.CurrentCharacter.ID;
+      worldLogin.PlayerControllerStream = new s2c_character_playercontroller_login_stream ();
       worldLogin.PawnStream = new sd_playerpawn_login_stream ();
       worldLogin.PawnStream.BaseMoveSpeed = 2;
       worldLogin.PawnStream.PhysicType = 1;
@@ -369,8 +391,8 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PawnStream.MoveFrameID = 1;
 
       worldLogin.PlayerStatsStream = new sd_player_stat_stream ();
-      worldLogin.PlayerStatsStream.MoveSpeed = 100;
-      worldLogin.PlayerStatsStream.CurrentHealth = 100.0f;
+      worldLogin.PlayerStatsStream.MoveSpeed = 200;
+      worldLogin.PlayerStatsStream.CurrentHealth = 500.0f;
       worldLogin.PlayerStatsStream.CharacterStats = new sd_character_stats_record ();
 
       worldLogin.CharacterInfo = new sd_base_character_info ();
@@ -378,7 +400,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.CharacterInfo.CharacterData = new sd_character_data ();
       worldLogin.CharacterInfo.CharacterSheetData = new sd_character_sheet_data ();
       worldLogin.CharacterInfo.CharacterSheetData.ClassId = 2;
-      worldLogin.CharacterInfo.CharacterSheetData.Health = 100.0f;
+      worldLogin.CharacterInfo.CharacterSheetData.Health = 500.0f;
       worldLogin.CharacterInfo.CharacterSheetData.SelectedSkillDeckID = 0;
 
       worldLogin.CharacterInfo.CharacterData.Name = networkPlayer.player.CurrentCharacter.Name;
@@ -388,7 +410,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.CharacterInfo.CharacterData.AppearancePart1 = 1;
 
       worldLogin.UnknownSlider = 1;
-      worldLogin.PlayerGroup = 0;
+      worldLogin.PlayerGroup = 2;
 
       Message message = worldLogin.Generate ();
       networkPlayer.connection.Send (message);
