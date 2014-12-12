@@ -125,7 +125,7 @@ namespace PackageExtractor
       Console.WriteLine ("Read export table...");
       ExportTable = new ExportEntry[Header.ExportCount];
       fileReader.Seek (Header.ExportOffset, SeekOrigin.Begin);
-
+      StringBuilder exportTableText = new StringBuilder ();
       for (uint k = 0; k < Header.ExportCount; ++k)
       {
         ExportEntry entry;
@@ -137,8 +137,17 @@ namespace PackageExtractor
         entry.SerialSize = fileReader.ReadIndex ();
         entry.SerialOffset = fileReader.ReadIndex ();
         ExportTable[k] = entry;
+
+        exportTableText.AppendLine ("-----------------------------");
+        exportTableText.AppendLine ("Class name: " + FindReferenceName(entry.ClassReference));
+        exportTableText.AppendLine ("Super Class name: " + FindReferenceName(entry.SuperReference));
+        exportTableText.AppendLine ("Package: " + FindReferenceName (entry.PackageReference));
+        exportTableText.AppendLine ("Object name: " + NameTable[entry.ObjectName]);
       }
-     
+
+      if (exportFile != "")
+        System.IO.File.WriteAllText (exportFile + ".exporttable.txt", exportTableText.ToString ());
+
       //--------------- READ ALL OBJECTS EXPORTED -----------------------
       Console.WriteLine ("Read exported objects...");
       StringBuilder exportText = new StringBuilder ();
@@ -168,15 +177,21 @@ namespace PackageExtractor
       Console.WriteLine ("Done");
     }
 
-    public string FindReferenceName (int reference)
+    public string FindReferenceName (int reference, bool showAncestors = true)
     {
       if (reference > 0)
       {
-        return NameTable[ExportTable[reference - 1].ObjectName] + " (Package: " + FindReferenceName(ExportTable[reference - 1].PackageReference)+")";
+        string result = NameTable[ExportTable[reference - 1].ObjectName];
+        if (showAncestors)
+          result += " (Package: " + FindReferenceName (ExportTable[reference - 1].PackageReference) + ")";
+        return result;
       }
       else if (reference < 0)
       {
-        return NameTable[ImportTable[-reference - 1].ObjectName] + " (Package: " + FindReferenceName (ImportTable[-reference - 1].PackageReference) + ")";
+        string result = NameTable[ImportTable[-reference - 1].ObjectName];
+        if (showAncestors)
+          result += " (Package: " + FindReferenceName (ImportTable[-reference - 1].PackageReference) + ")";
+        return result;
       }
       else
         return "null";

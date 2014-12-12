@@ -11,7 +11,7 @@ namespace TCoSServer.GameServer.Network.Packets
   {
     public string Sender;
     public string Message;
-    public int Unknown;
+    public byte Channel;
 
     public override Message Generate ()
     {
@@ -20,7 +20,7 @@ namespace TCoSServer.GameServer.Network.Packets
       {
         writer.Write (Sender);
         writer.Write (Message);
-        writer.Write (Unknown);
+        writer.Write (Channel);
         result = writer.ComputeMessage ();
       }
       return result;

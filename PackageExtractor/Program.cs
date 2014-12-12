@@ -18,7 +18,7 @@ namespace PackageExtractor
     {
       Package pack = new Package (@"G:\TCoS0.9\data\environment\maps\PT_Hawksmouth.sbw");
       pack.ReadLocalizedStrings (@"G:\TCoS0.9\data\static\descriptions.s");
-      pack.Load (@"G:\TCoS0.9\data\PT_Hawksmouth");
+      pack.Load (@"G:\TCoS0.9\data\scripts\client\SBGame");
      
       Console.ReadKey ();
     }

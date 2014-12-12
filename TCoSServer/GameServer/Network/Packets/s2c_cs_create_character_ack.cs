@@ -13,7 +13,7 @@ namespace TCoSServer.GameServer.Network.Packets
     public int Status;
     public sd_base_character_info CharacterInformation;
     
-    public s2c_cs_create_character_ack (c2s_cs_create_character charData)
+    public s2c_cs_create_character_ack (c2s_cs_create_character charData, int characterID)
     {
       Status = 0;
       CharacterInformation = new sd_base_character_info ();
@@ -45,10 +45,10 @@ namespace TCoSServer.GameServer.Network.Packets
       CharacterInformation.Items = new sd_item[1];
 
       CharacterInformation.Items[0] = new sd_item ();
-      CharacterInformation.Items[0].ItemId = charData.ChestArmourId;
+      CharacterInformation.Items[0].ItemId = charData.MeleeWeaponId;
       Console.WriteLine ("ItemId: {0}", charData.ChestArmourId);
       CharacterInformation.Items[0].ItemTypeId = 72470;
-      CharacterInformation.Items[0].CharacterId = 41267;//42;
+      CharacterInformation.Items[0].CharacterId = characterID;
       CharacterInformation.Items[0].EItemLocationType = 1;
       CharacterInformation.Items[0].LocationId = (int)EEquipmentSlot.ES_CHESTARMOUR;
       CharacterInformation.Items[0].Colour1 = charData.ChestArmourColour1;

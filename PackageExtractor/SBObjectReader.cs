@@ -34,11 +34,13 @@ namespace PackageExtractor
 
   public class SBObject
   {
+    public SBClass Class;
     public string Name;
     public string ClassName;
     public string SuperClassName;
     public int Size;
     public string Package;
+    public List<ObjectFlags> Flags;
     //Name => SBproperty
     public Dictionary<string,SBProperty> Properties;
 
@@ -49,15 +51,80 @@ namespace PackageExtractor
       builder.AppendLine ("Object name: " + Name);
       builder.AppendLine ("Object class: " + ClassName);
       builder.AppendLine ("Object super class: " + SuperClassName);
-      builder.AppendLine ("Object Package: " + Package + "\n");
-      builder.AppendLine ("Properties:");
-      foreach (KeyValuePair<string, SBProperty> prop in Properties)
+      builder.AppendLine ("Object Package: " + Package );
+      builder.AppendLine ("Object Size: " + Size);
+      if (Flags.Count > 0)
       {
-        builder.AppendLine (prop.Value.ToString());
+        builder.Append ("Object Flags: ");
+        foreach (ObjectFlags flag in Flags)
+          builder.Append (flag.ToString() + "; ");
       }
       builder.AppendLine ("");
+      builder.AppendLine ("Class details: ");
+      builder.AppendLine (Class.ToString ());
+      if (Properties.Count > 0)
+      {
+        builder.AppendLine ("Properties (" + Properties.Count + "):");
+        foreach (KeyValuePair<string, SBProperty> prop in Properties)
+        {
+          builder.AppendLine (prop.Value.ToString ());
+        }
+      }
+      else
+        builder.AppendLine ("No Properties");
 
       return builder.ToString();
+    }
+  }
+
+  public class SBClass
+  {
+    public SBClass Ancestor;
+    public string Name;
+    //Name => Value
+    public Dictionary<string, string> Fields;
+
+    //temp
+    public string HexaDump;
+
+    public SBClass ()
+    {
+      Name = "null";
+      Fields = new Dictionary<string, string> ();
+    }
+
+    public override string ToString ()
+    {
+      StringBuilder builder = new StringBuilder ();
+      builder.AppendLine ("Class name: " + Name);
+      if (Ancestor != null)
+      {
+        builder.AppendLine ("");
+        builder.AppendLine ("Class ancestor: " + Ancestor.Name);
+        builder.Append (Ancestor.FieldsToString ());
+        builder.AppendLine ("");
+      }
+      else
+        builder.AppendLine ("Class ancestor: null");
+
+      builder.AppendLine (FieldsToString ());
+
+      return builder.ToString ();
+    }
+
+    public string FieldsToString ()
+    {
+      StringBuilder builder = new StringBuilder ();
+      if (Fields.Count > 0)
+      {
+        builder.AppendLine ("Fields: ");
+        foreach (KeyValuePair<string, string> keyValue in Fields)
+        {
+          builder.AppendLine (keyValue.Key + ": " + keyValue.Value);
+        }
+      }
+
+      return builder.ToString ();
     }
   }
 
@@ -73,7 +140,9 @@ namespace PackageExtractor
     public SBObject ReadObject (SBFileReader fileReader, ExportEntry entry)
     {
       SBObject result = new SBObject ();
+      result.Class = new SBClass ();
       result.Name = package.NameTable[entry.ObjectName];
+      result.Flags = new List<ObjectFlags> ();
       result.Properties = new Dictionary<string, SBProperty> ();
       result.ClassName = package.FindReferenceName(entry.ClassReference);
       result.Package = package.FindReferenceName(entry.PackageReference);
@@ -83,10 +152,14 @@ namespace PackageExtractor
       bool hasExecutionStack = false;
 
       //Detect stack
-      if ((entry.ObjectFlags & ObjectFlags.RF_HasStack) != 0)
+      if ((entry.ObjectFlags & (int)ObjectFlags.RF_HasStack) != 0)
+      {
         hasExecutionStack = true;
+        result.Flags.Add (ObjectFlags.RF_HasStack);
+      }
 
-      if (entry.SerialSize <= 0)
+      //Currently we cannot read null class
+      if (entry.SerialSize <= 0 || result.ClassName == "null")
         return result;
 
       //Read object data if present
@@ -107,6 +180,84 @@ namespace PackageExtractor
         }
       }
 
+      ReadProperties (fileReader, result, entry);
+
+      //Try to read class
+      string className = result.ClassName.Substring (0, result.ClassName.IndexOf ("(") - 1).Trim ();
+      
+      switch (className)
+      {
+        case "Const":
+          result.Class = ReadConstClass (fileReader);
+          break;
+        case "Enum":
+          result.Class = ReadEnumClass (fileReader);
+          break;
+        case "Property":
+          result.Class = ReadPropertyClass (fileReader);
+          break;
+        case "ByteProperty":
+          result.Class = ReadBytePropertyClass (fileReader);
+          break;
+        case "ObjectProperty":
+          result.Class = ReadObjectPropertyClass (fileReader);
+          break;
+        case "FixedArrayProperty":
+          result.Class = ReadFixedArrayPropertyClass (fileReader);
+          break;
+        case "ArrayProperty":
+          result.Class = ReadArrayPropertyClass (fileReader);
+          break;
+        case "MapProperty":
+          result.Class = ReadMapPropertyClass (fileReader);
+          break;
+        case "ClassProperty":
+          result.Class = ReadClassPropertyClass (fileReader);
+          break;
+        case "StructProperty":
+          result.Class = ReadStructPropertyClass (fileReader);
+          break;
+        case "IntProperty":
+          result.Class = ReadIntPropertyClass (fileReader);
+          break;
+        case "BoolProperty":
+          result.Class = ReadBoolPropertyClass (fileReader);
+          break;
+        case "FloatProperty":
+          result.Class = ReadFloatPropertyClass (fileReader);
+          break;
+        case "NameProperty":
+          result.Class = ReadNamePropertyClass (fileReader);
+          break;
+        case "StrProperty":
+          result.Class = ReadStrPropertyClass (fileReader);
+          break;
+        case "StringProperty":
+          result.Class = ReadIntPropertyClass (fileReader);
+          break;
+        case "Struct":
+          result.Class = ReadStructClass (fileReader);
+          break;
+        case "Function":
+          result.Class = ReadFunctionClass (fileReader);
+          break;
+        case "State":
+          result.Class = ReadStateClass (fileReader);
+          break;
+        case "null":
+        case "None":
+          result.Class = ReadNullClass (fileReader);
+          break;
+        default:
+          Console.WriteLine ("Not a base unreal class");
+          break;
+      }
+      
+      return result;
+    }
+
+    private void ReadProperties (SBFileReader fileReader, SBObject result, ExportEntry entry)
+    {
       //Name index of the next property to be read
       int propertyNameIndex;
 
@@ -197,11 +348,11 @@ namespace PackageExtractor
             break;
 
           case PropertyType.FloatProperty:
-            property.Value = fileReader.ReadFloat ().ToString();
+            property.Value = fileReader.ReadFloat ().ToString ();
             break;
 
           case PropertyType.NameProperty:
-            property.Value = package.NameTable[fileReader.ReadIndex()];
+            property.Value = package.NameTable[fileReader.ReadIndex ()];
             break;
 
           case PropertyType.StrProperty:
@@ -218,7 +369,7 @@ namespace PackageExtractor
             property.Value = package.FindReferenceName (objectReference) + " (reference)";
             break;
 
-           //Structs are a special case
+          //Structs are a special case
           case PropertyType.StructProperty:
 
             if (property.StructName == "Vector")
@@ -257,8 +408,312 @@ namespace PackageExtractor
         } while (!success);
 
       } while (package.NameTable[propertyNameIndex] != "DRFORTHEWIN" && package.NameTable[propertyNameIndex] != "None" && fileReader.Position < entry.SerialOffset + entry.SerialSize);
+    }
 
-      return result;
+    //Unreal specific classes readers
+    private SBClass ReadFieldClass (SBFileReader reader)
+    {
+      int superField = reader.ReadIndex ();
+      int next = reader.ReadIndex ();
+      SBClass field = new SBClass();
+      field.Name = "Field";
+      field.Fields.Add("SuperField", superField.ToString());
+      field.Fields.Add ("Next", next.ToString());
+      return field;
+    }
+
+    private SBClass ReadConstClass (SBFileReader reader)
+    {
+      SBClass constClass = new SBClass ();
+      constClass.Ancestor = ReadFieldClass (reader);
+      constClass.Name = "Const";
+
+      int size = reader.ReadIndex ();
+      string constant = System.Text.Encoding.ASCII.GetString (reader.ReadBytes (size));
+      constClass.Fields.Add ("Size", size.ToString());
+      constClass.Fields.Add ("Constant", constant);
+      return constClass;
+    }
+
+    private SBClass ReadEnumClass (SBFileReader reader)
+    {
+      SBClass enumClass = new SBClass ();
+      enumClass.Name = "Enum";
+      enumClass.Ancestor = ReadFieldClass (reader);
+      int arraySize = reader.ReadIndex ();
+      enumClass.Fields.Add ("ArraySize", arraySize.ToString ());
+      for (int i = 0; i < arraySize; ++i)
+      {
+        enumClass.Fields.Add ("ElementName"+i, package.NameTable[reader.ReadIndex ()]);
+      }
+
+      return enumClass;
+    }
+
+    private SBClass ReadPropertyClass (SBFileReader reader)
+    {
+      SBClass property = new SBClass ();
+      property.Name = "Property";
+      property.Ancestor = ReadFieldClass (reader);
+
+      Int16 arrayDimension = reader.ReadInt16 ();
+      Int16 elementSize = reader.ReadInt16 ();
+      Int32 propertyFlags = reader.ReadInt32 ();
+      int category = reader.ReadIndex ();
+      property.Fields.Add ("ArrayDimension", arrayDimension.ToString ());
+      property.Fields.Add ("ElementSize", elementSize.ToString ());
+      property.Fields.Add ("PropertyFlags", propertyFlags.ToString ());
+      property.Fields.Add ("Category", package.NameTable[category]);
+      if ( (propertyFlags & (int)PropertyFlags.CPF_Net) != 0)
+      {
+        int replicationOffset = reader.ReadInt16 ();
+        property.Fields.Add ("Replication Offset", replicationOffset.ToString ());
+      }
+
+      return property;
+    }
+
+    private SBClass ReadBytePropertyClass (SBFileReader reader)
+    {
+      SBClass byteProperty = new SBClass ();
+      byteProperty.Name = "ByteProperty";
+      byteProperty.Ancestor = ReadPropertyClass (reader);
+      int enumType = reader.ReadIndex ();
+      byteProperty.Fields.Add ("EnumType", enumType.ToString ());
+
+      return byteProperty;
+    }
+
+    private SBClass ReadObjectPropertyClass (SBFileReader reader)
+    {
+      SBClass objectProperty = new SBClass ();
+      objectProperty.Name = "ObjectProperty";
+      objectProperty.Ancestor = ReadPropertyClass (reader);
+      int objectType = reader.ReadIndex ();
+      objectProperty.Fields.Add ("ObjectType", package.FindReferenceName(objectType));
+
+      return objectProperty;
+    }
+
+    private SBClass ReadFixedArrayPropertyClass (SBFileReader reader)
+    {
+      SBClass fixedArrayProperty = new SBClass ();
+      fixedArrayProperty.Name = "FixedArrayProperty";
+      fixedArrayProperty.Ancestor = ReadPropertyClass (reader);
+
+      int inner = reader.ReadIndex ();
+      int count = reader.ReadIndex ();
+
+      fixedArrayProperty.Fields.Add ("Inner", package.FindReferenceName(inner));
+      fixedArrayProperty.Fields.Add ("Count", package.FindReferenceName(count));
+
+      return fixedArrayProperty;
+    }
+
+    private SBClass ReadArrayPropertyClass (SBFileReader reader)
+    {
+      SBClass arrayProperty = new SBClass ();
+      arrayProperty.Name = "ArrayProperty";
+      arrayProperty.Ancestor = ReadPropertyClass (reader);
+
+      int inner = reader.ReadIndex ();
+
+      arrayProperty.Fields.Add ("Inner", package.FindReferenceName(inner));
+
+      return arrayProperty;
+    }
+
+    private SBClass ReadMapPropertyClass (SBFileReader reader)
+    {
+      SBClass mapProperty = new SBClass ();
+      mapProperty.Name = "MapProperty";
+      mapProperty.Ancestor = ReadPropertyClass (reader);
+
+      int key = reader.ReadIndex ();
+      int value = reader.ReadIndex ();
+
+      mapProperty.Fields.Add("Key", key.ToString());
+      mapProperty.Fields.Add ("Value", value.ToString ());
+
+      return mapProperty;
+    }
+
+    private SBClass ReadClassPropertyClass (SBFileReader reader)
+    {
+      SBClass classProperty = new SBClass ();
+      classProperty.Name = "ClassProperty";
+      classProperty.Ancestor = ReadPropertyClass (reader);
+
+      int mclass = reader.ReadIndex();
+      classProperty.Fields.Add ("Class", package.NameTable[mclass]);
+
+      return classProperty;
+    }
+
+    private SBClass ReadStructPropertyClass (SBFileReader reader)
+    {
+      SBClass structProperty = new SBClass ();
+      structProperty.Name = "StructProperty";
+      structProperty.Ancestor = ReadPropertyClass (reader);
+
+      int structType = reader.ReadIndex();
+
+      structProperty.Fields.Add("StructType", structType.ToString());
+
+      return structProperty;
+    }
+
+    private SBClass ReadIntPropertyClass (SBFileReader reader)
+    {
+      SBClass intProperty = new SBClass ();
+      intProperty.Name = "IntProperty";
+      intProperty.Ancestor = ReadPropertyClass (reader);
+
+      return intProperty;
+    }
+
+    private SBClass ReadBoolPropertyClass (SBFileReader reader)
+    {
+      SBClass boolProperty = new SBClass ();
+      boolProperty.Name = "BoolProperty";
+      boolProperty.Ancestor = ReadPropertyClass (reader);
+
+      return boolProperty;
+    }
+
+    private SBClass ReadFloatPropertyClass (SBFileReader reader)
+    {
+      SBClass floatProperty = new SBClass ();
+      floatProperty.Name = "FloatProperty";
+      floatProperty.Ancestor = ReadPropertyClass (reader);
+
+      return floatProperty;
+    }
+
+    private SBClass ReadNamePropertyClass (SBFileReader reader)
+    {
+      SBClass nameProperty = new SBClass ();
+      nameProperty.Name = "NameProperty";
+      nameProperty.Ancestor = ReadPropertyClass (reader);
+
+      return nameProperty;
+    }
+
+    private SBClass ReadStrPropertyClass (SBFileReader reader)
+    {
+      SBClass strProperty = new SBClass ();
+      strProperty.Name = "StrProperty";
+      strProperty.Ancestor = ReadPropertyClass (reader);
+
+      return strProperty;
+    }
+
+    private SBClass ReadStringPropertyClass (SBFileReader reader)
+    {
+      SBClass stringProperty = new SBClass ();
+      stringProperty.Name = "StringProperty";
+      stringProperty.Ancestor = ReadPropertyClass (reader);
+
+      return stringProperty;
+    }
+
+    private SBClass ReadStructClass (SBFileReader reader)
+    {
+      SBClass structClass = new SBClass ();
+      structClass.Name = "Struct";
+      structClass.Ancestor = ReadFieldClass (reader);
+      int scriptText = reader.ReadIndex ();
+      int children = reader.ReadIndex ();
+      int friendlyName = reader.ReadIndex ();
+      int line = reader.ReadInt32 ();
+      int textPos = reader.ReadInt32 ();
+      int scriptSize = reader.ReadInt32 ();
+      //Try to "eat" the script code for children classes, but according
+      //to the doc, it should not work, we have to reverse the bytecode...
+      if (scriptSize > 0)
+      reader.ReadBytes (scriptSize);
+      structClass.Fields.Add ("ScriptText", package.FindReferenceName (scriptText));
+      structClass.Fields.Add ("Children", package.FindReferenceName (children));
+      structClass.Fields.Add ("FriendlyName", package.NameTable[friendlyName]);
+      structClass.Fields.Add ("Line", line.ToString ());
+      structClass.Fields.Add ("TextPos", textPos.ToString ());
+      structClass.Fields.Add ("ScriptSize", scriptSize.ToString ());
+
+      return structClass;
+    }
+
+    private SBClass ReadFunctionClass (SBFileReader reader)
+    {
+      SBClass function = new SBClass ();
+      function.Name = "Function";
+      function.Ancestor = ReadStructClass (reader);
+
+      Int16 inative = reader.ReadInt16 ();
+      byte operatorPrecedence = reader.ReadByte ();
+      int functionFlags = reader.ReadInt32 ();
+      function.Fields.Add ("iNative", inative.ToString ());
+      function.Fields.Add ("OperatorPrecedence", operatorPrecedence.ToString ());
+      function.Fields.Add ("FunctionFlags", functionFlags.ToString ());
+
+      if ((functionFlags & (int)FunctionFlags.FUNC_Net) != 0)
+      {
+        Int16 replicationOffset = reader.ReadInt16 ();
+        function.Fields.Add ("ReplicationOffset", replicationOffset.ToString ());
+      }
+
+      return function;
+    }
+
+    private SBClass ReadStateClass (SBFileReader reader)
+    {
+      SBClass state = new SBClass ();
+      state.Name = "State";
+      state.Ancestor = ReadStructClass (reader);
+
+      Int64 probeMask = reader.ReadInt64 ();
+      Int64 ignoreMask = reader.ReadInt64 ();
+      Int16 labelTableOffset = reader.ReadInt16 ();
+      Int32 stateFlags = reader.ReadInt32 ();
+
+      state.Fields.Add ("ProbeMask", probeMask.ToString ());
+      state.Fields.Add ("IgnoreMask", ignoreMask.ToString ());
+      state.Fields.Add ("LabelTableOffset", labelTableOffset.ToString ());
+      state.Fields.Add ("StateFlags", stateFlags.ToString ());
+
+      return state;
+    }
+
+    private SBClass ReadNullClass (SBFileReader reader)
+    {
+      SBClass nullClass = new SBClass ();
+      nullClass.Name = "null";
+      nullClass.Ancestor = ReadStateClass (reader);
+
+      int classFlags = reader.ReadInt32 ();
+      int classGuid = reader.ReadInt32 ();
+      int dependencies_count = reader.ReadIndex ();
+      //for now skip the dependencies, just "eat" them
+      for (int i = 0; i < dependencies_count; ++i)
+      {
+        reader.ReadIndex ();//Class
+        reader.ReadInt32 ();//Deep
+        reader.ReadInt32 ();//ScriptTextCRC
+      }
+      int packageImports_count = reader.ReadIndex ();
+      //for now skip the package Imports, just "eat" them
+      for (int i = 0; i < packageImports_count; ++i)
+        reader.ReadIndex ();//PackageImport
+      int classWithin = reader.ReadIndex ();
+      int classConfigName = reader.ReadIndex ();
+
+      nullClass.Fields.Add ("ClassFlags", classFlags.ToString ());
+      nullClass.Fields.Add ("ClassGuid", classGuid.ToString ());
+      nullClass.Fields.Add ("Dependencies Count", dependencies_count.ToString ());
+      nullClass.Fields.Add ("Package Imports Count", packageImports_count.ToString ());
+      nullClass.Fields.Add ("Class Within", package.FindReferenceName (classWithin));
+      nullClass.Fields.Add ("Class Config Name", package.NameTable[classConfigName]);
+
+      return nullClass;
     }
   }
 }

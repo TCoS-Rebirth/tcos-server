@@ -17,6 +17,7 @@ namespace TCoSServer.GameServer.Network
     private Queue messagesToSend;
     private Socket connectionToClient;
     private bool isSending;
+    private bool mustClose;
 
     public Connection (Socket clientSocket)
     {
@@ -25,6 +26,15 @@ namespace TCoSServer.GameServer.Network
       messagesToSend = Queue.Synchronized (messagesToSend);
 
       isSending = false;
+      mustClose = false;
+    }
+
+    public void Close()
+    {
+      if (isSending)
+        mustClose = true;
+      else
+        connectionToClient.Disconnect (false);
     }
 
     public async void Send (Message toSend)
@@ -55,6 +65,8 @@ namespace TCoSServer.GameServer.Network
         }
       }
       isSending = false;
+      if (mustClose)
+        connectionToClient.Disconnect (false);
     }
   }
 }
