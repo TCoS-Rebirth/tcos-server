@@ -1,7 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TCoSServer", "TCoSServer\TCoSServer.csproj", "{0A2C0E52-42DE-4B56-9368-C6AC1676D1CD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8} = {A877846F-0E67-40CA-9A54-1C39FCFCC1A8}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PackageExtractor", "PackageExtractor\PackageExtractor.csproj", "{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}"
 EndProject
@@ -29,6 +34,7 @@ Global
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Debug|Mixed Platforms.Deploy.0 = Debug|Any CPU
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A877846F-0E67-40CA-9A54-1C39FCFCC1A8}.Release|Any CPU.Build.0 = Release|Any CPU

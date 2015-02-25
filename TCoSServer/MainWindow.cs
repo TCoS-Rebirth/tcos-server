@@ -141,16 +141,16 @@ namespace TCoSServer
       GameServer.GameServer.BypassCharacterScreen = !GameServer.GameServer.BypassCharacterScreen;
     }
 
-    private void btnSendPacket_Click (object sender, EventArgs e)
+    private void btnIE_Rel (object sender, EventArgs e)
     {
       s2c_interactivelevelelement_add packet = new s2c_interactivelevelelement_add ();
-      packet.RelevanceID = Int32.Parse(txtRelevance.Text);
+      packet.RelevanceID = Int32.Parse(txtIERel.Text);
       packet.NetRotation = new GameServer.Network.Structures.FVector ();
       packet.NetLocation = new GameServer.Network.Structures.FVector ();
-      packet.NetRotation.Y = 33984;
-      packet.NetLocation.X = -12889.61f;
-      packet.NetLocation.Y = -2601.45f;
-      packet.NetLocation.Z = 7413.85f;
+      packet.NetRotation.Y = Int32.Parse(txtIERot.Text); //Rotate on Y-axis only
+      packet.NetLocation.X = Int32.Parse(txtIELocX.Text);
+      packet.NetLocation.Y = Int32.Parse(txtIELocY.Text);
+      packet.NetLocation.Z = Int32.Parse(txtIELocZ.Text);
       packet.LevelObjectID = Int32.Parse (txtLevelObject.Text);
       packet.IsEnabledBitfield = Int32.Parse (txtIsEnabled.Text);
       packet.IsHidden = Int32.Parse (txtIsHidden.Text);
@@ -158,5 +158,44 @@ namespace TCoSServer
       packet.ActivatedRespawnTimerBitfield = Int32.Parse (txtBitfield.Text);
       gameServer.DebugSendMessageToEveryone (packet.Generate ());
     }
+
+    private void label8_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void groupBox2_Enter(object sender, EventArgs e)
+    {
+
+    }
+
+    private void txtTelePawnLocY_TextChanged(object sender, EventArgs e)
+    {
+
+    }
+
+
+    private void btnPrintCharIDs_Click(object sender, EventArgs e)
+    {
+       // if (gameServer.getNumPlayers()) 
+        int numP = gameServer.getNumPlayers();
+        Console.WriteLine(numP + " players connected");
+        if (gameServer.getNumPlayers() != 0) { gameServer.PrintPlayerIDsList();}
+    }
+
+    private void btnTelePawn_Click_1(object sender, EventArgs e)
+    {
+        s2r_game_pawn_sv2clrel_teleportto packet = new s2r_game_pawn_sv2clrel_teleportto();
+        packet.RelevanceID = Int32.Parse(txtTelePawnRel.Text);
+        packet.NewLocation = new GameServer.Network.Structures.FVector();
+        packet.NewRotation = new GameServer.Network.Structures.FRotator();
+        packet.NewRotation.Yaw = Int32.Parse(txtTelePawnRot.Text); //Rotate on Y-axis only
+        packet.NewLocation.X = Int32.Parse(txtTelePawnLocX.Text);
+        packet.NewLocation.Y = Int32.Parse(txtTelePawnLocY.Text);
+        packet.NewLocation.Z = Int32.Parse(txtTelePawnLocZ.Text);
+        gameServer.DebugSendMessageToEveryone(packet.Generate());
+    }
+
+
   }
 }

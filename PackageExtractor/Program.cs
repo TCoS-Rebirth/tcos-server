@@ -1,27 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace PackageExtractor
 {
-  class Program
+  public static class DataType
   {
-    
-     static void Main (string[] args)
-    {
-      Package pack = new Package (@"G:\TCoS0.9\data\environment\maps\PT_Hawksmouth.sbw");
-      pack.ReadLocalizedStrings (@"G:\TCoS0.9\data\static\descriptions.s");
-      pack.Load (@"G:\TCoS0.9\data\PT_Hawksmouth");
-     
-      Console.ReadKey ();
-    }
+    public const int BYTE = 1;
+    public const int WORD = 2;
+    public const int DWORD = 4;
+    public const int QWORD = 8;
+  }
 
+  static class Program
+  {
+
+    /// <summary>
+    /// Point d'entrée principal de l'application.
+    /// </summary>
+    [STAThread]
+    static void Main ()
+    {
+      Application.EnableVisualStyles ();
+      Application.SetCompatibleTextRenderingDefault (false);
+
+      Application.Run (new MainWindow ());
+      
+    }
   }
 }

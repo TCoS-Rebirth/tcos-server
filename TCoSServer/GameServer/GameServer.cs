@@ -169,5 +169,15 @@ namespace TCoSServer.GameServer
         playersList.Add (player);
       }
     }
+
+    public void PrintPlayerIDsList()
+    {
+        foreach (NetworkPlayer p in playersList) 
+        {
+            Console.WriteLine("Character: " + p.getCharName(p) + " - ID " + p.getCharID(p));
+        }
+    }
+
+    public int getNumPlayers() { return playersList.Count; }
   }
 }

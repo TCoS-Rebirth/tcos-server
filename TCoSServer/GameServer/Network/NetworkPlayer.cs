@@ -291,7 +291,7 @@ namespace TCoSServer.GameServer.Network
       notifyRotation.CompressedRotator = rotation.CompressedRotator;
       player.NotifyReplication (notifyRotation.Generate ());
     }
-
+      
     private static void HandleChatMessage (NetworkPlayer player, Message message)
     {
       Console.WriteLine ("[GS] Handle C2S_GAME_CHAT_CL2SV_SENDMESSAGE");
@@ -489,5 +489,10 @@ namespace TCoSServer.GameServer.Network
         networkPlayer.connection.Send (testMessage2);
       }
     }
+
+    public int getCharID(NetworkPlayer player) { return player.player.CurrentCharacter.ID; }
+    public string getCharName(NetworkPlayer player) { return player.player.CurrentCharacter.Name; }
   }
+
+    
 }

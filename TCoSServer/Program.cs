@@ -28,6 +28,7 @@ namespace TCoSServer
       Login.LoginSession.initMessageHandlers ();
 
       Application.Run (new MainWindow ());
+      
     }
   }
 }

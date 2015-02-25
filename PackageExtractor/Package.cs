@@ -62,7 +62,7 @@ namespace PackageExtractor
       LocalizedStrings = new Dictionary<int, string> ();
     }
 
-    public void Load (string exportFile = "")
+    public void Load (string searchString, string exportFile = "")
     {
       SBFileReader fileReader = new SBFileReader (packageFileFullName);
       fileReader.Read (out Header, Marshal.SizeOf (Header));
@@ -161,7 +161,7 @@ namespace PackageExtractor
         System.IO.File.WriteAllText (exportFile + ".export.txt", exportText.ToString ());
       }
 
-      SBObject[] result = Array.FindAll(objects.ToArray(), o => o.Name.Contains("SBWorldPortal"));
+      SBObject[] result = Array.FindAll(objects.ToArray(), o => o.Name.Contains(searchString));
       foreach (SBObject o in result)
         Console.WriteLine (o.ToString ());
 
