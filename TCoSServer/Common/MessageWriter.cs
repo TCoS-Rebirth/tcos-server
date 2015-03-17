@@ -45,7 +45,7 @@ namespace TCoSServer.Common
     {
       headerBuffer = new MemoryStream (Message.headerSize);
       bodyBuffer = new MemoryStream (initialCapacity);
-      message = new Message ();
+      message = MessagePool.GetInstance().GetMessage();
       headerWriter = new BinaryWriter (headerBuffer, Encoding.Unicode);
       bodyWriter = new BinaryWriter (bodyBuffer, Encoding.Unicode);
 

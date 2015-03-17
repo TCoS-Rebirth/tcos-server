@@ -141,22 +141,5 @@ namespace TCoSServer
       GameServer.GameServer.BypassCharacterScreen = !GameServer.GameServer.BypassCharacterScreen;
     }
 
-    private void btnSendPacket_Click (object sender, EventArgs e)
-    {
-      s2c_interactivelevelelement_add packet = new s2c_interactivelevelelement_add ();
-      packet.RelevanceID = Int32.Parse(txtRelevance.Text);
-      packet.NetRotation = new GameServer.Network.Structures.FVector ();
-      packet.NetLocation = new GameServer.Network.Structures.FVector ();
-      packet.NetRotation.Y = 33984;
-      packet.NetLocation.X = -12889.61f;
-      packet.NetLocation.Y = -2601.45f;
-      packet.NetLocation.Z = 7413.85f;
-      packet.LevelObjectID = Int32.Parse (txtLevelObject.Text);
-      packet.IsEnabledBitfield = Int32.Parse (txtIsEnabled.Text);
-      packet.IsHidden = Int32.Parse (txtIsHidden.Text);
-      packet.CollisionType = Byte.Parse (txtCollision.Text);
-      packet.ActivatedRespawnTimerBitfield = Int32.Parse (txtBitfield.Text);
-      gameServer.DebugSendMessageToEveryone (packet.Generate ());
-    }
   }
 }

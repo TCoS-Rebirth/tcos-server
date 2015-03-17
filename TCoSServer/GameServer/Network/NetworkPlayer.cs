@@ -82,7 +82,7 @@ namespace TCoSServer.GameServer.Network
       { }
     }
 
-    public void SendMessage (Message message)
+    public void SendMessage (SBPacket message)
     {
       connection.Send (message);
     }
@@ -159,7 +159,7 @@ namespace TCoSServer.GameServer.Network
     }
 
     //Handle sending all the replication messages to other players
-    private void NotifyReplication (Message toSend)
+    private void NotifyReplication (SBPacket toSend)
     {
       foreach (NetworkPlayer player in replicationList)
       {
@@ -262,7 +262,7 @@ namespace TCoSServer.GameServer.Network
       playermove.RelevanceID = player.player.CurrentCharacter.ID; ;
       playermove.MoveFrameID = packet.MoveFrameID;
       playermove.Physics = (byte) EPhysics.PHYS_Walking;
-      player.NotifyReplication (playermove.Generate ());
+      player.NotifyReplication (playermove);
     }
 
     private static void HandleUpdateMovementWithPhysics (NetworkPlayer player, Message message)
@@ -279,7 +279,7 @@ namespace TCoSServer.GameServer.Network
       playermove.RelevanceID = player.player.CurrentCharacter.ID;
       playermove.MoveFrameID = packet.MoveFrameID;
       playermove.Physics = packet.Physics;
-      player.NotifyReplication (playermove.Generate ());
+      player.NotifyReplication (playermove);
     }
 
     private static void HandleUpdateRotation (NetworkPlayer player, Message message)
@@ -291,7 +291,7 @@ namespace TCoSServer.GameServer.Network
       s2r_game_playerpawn_updaterotation notifyRotation = new s2r_game_playerpawn_updaterotation ();
       notifyRotation.RelevanceID = rotation.CharacterID;
       notifyRotation.CompressedRotator = rotation.CompressedRotator;
-      player.NotifyReplication (notifyRotation.Generate ());
+      player.NotifyReplication (notifyRotation);
     }
 
     private static void HandleChatMessage (NetworkPlayer player, Message message)
@@ -306,7 +306,7 @@ namespace TCoSServer.GameServer.Network
       answer.Sender = player.player.CurrentCharacter.Name;
       answer.Message = packet.Message;
       answer.Channel = packet.Channel;
-      player.NotifyReplication (answer.Generate ());
+      player.NotifyReplication (answer);
     }
 
     //Send messages
@@ -316,16 +316,15 @@ namespace TCoSServer.GameServer.Network
       s2c_world_pre_login preLogin = new s2c_world_pre_login ();
       preLogin.Unknwown = 0;
       preLogin.WorldId = worldId;
-      Message message = preLogin.Generate ();
-      connection.Send (message);
+      connection.Send(preLogin);
     }
 
     private static void SendWorldLogoutAck (Connection connection)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGOUT_ACK");
       s2c_world_logout_ack logout = new s2c_world_logout_ack ();
-      Message message = logout.Generate ();
-      connection.Send (message);
+      
+      connection.Send(logout);
     }
 
     
@@ -336,9 +335,7 @@ namespace TCoSServer.GameServer.Network
       //Character creation screen
       if (nPlayer.player.getNumCharacters () == 0)
       {
-        Message csLogin = message.Generate ();
-
-        nPlayer.connection.Send (csLogin);
+        nPlayer.connection.Send(message);
       }
       //Character selection screen
       else
@@ -363,8 +360,7 @@ namespace TCoSServer.GameServer.Network
           message.FameMap.Add (baseInfo.CharacterId, 5);
         }
 
-        Message csLogin = message.Generate ();
-        nPlayer.connection.Send (csLogin);
+        nPlayer.connection.Send(message);
       }
     }
 
@@ -374,14 +370,14 @@ namespace TCoSServer.GameServer.Network
       s2c_cs_create_character_ack ack = new s2c_cs_create_character_ack (characterData, nPlayer.player.CurrentCharacter.ID);
       ack.CharacterInformation.CharacterId = nPlayer.player.CurrentCharacter.ID;
       ack.CharacterInformation.CharacterData.AccountId = nPlayer.player.AccountID;
-      Message message = ack.Generate ();
-      nPlayer.connection.Send (message);
+      
+      nPlayer.connection.Send(ack);
     }
 
     private static void SendWorldLogin (NetworkPlayer networkPlayer)
     {
       Console.WriteLine ("[GS] Send S2C_WORLD_LOGIN");
-      networkPlayer.player.CurrentCharacter.Position = new FVector (-15102.36f, -7615.43f, 8004.88f);
+      networkPlayer.player.CurrentCharacter.Position = new FVector(-15102.36f, -7615.43f, 8004.88f);
       s2c_world_login worldLogin = new s2c_world_login ();
       worldLogin.ZeroDWord = 0;
       worldLogin.ActorId = networkPlayer.player.CurrentCharacter.ID;
@@ -393,7 +389,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.PawnStream.MoveFrameID = 1;
 
       worldLogin.PlayerStatsStream = new sd_player_stat_stream ();
-      worldLogin.PlayerStatsStream.MoveSpeed = 1000;
+      worldLogin.PlayerStatsStream.MoveSpeed = 500;
       worldLogin.PlayerStatsStream.CurrentHealth = 500.0f;
       worldLogin.PlayerStatsStream.CharacterStats = new sd_character_stats_record ();
 
@@ -414,8 +410,7 @@ namespace TCoSServer.GameServer.Network
       worldLogin.UnknownSlider = 1;
       worldLogin.PlayerGroup = 2;
 
-      Message message = worldLogin.Generate ();
-      networkPlayer.connection.Send (message);
+      networkPlayer.connection.Send(worldLogin);
 
       //Notify other players this player arrives
       s2c_player_add addPlayer = new s2c_player_add ();
@@ -444,13 +439,13 @@ namespace TCoSServer.GameServer.Network
       addPlayer.PlayerPawn.MoveFrameID = 0;
       addPlayer.PlayerPawn.NetLocation = networkPlayer.player.CurrentCharacter.Position;
       addPlayer.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
-      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_None;
+      addPlayer.PlayerPawn.Physics = (byte)EPhysics.PHYS_Walking;
       addPlayer.PlayerStats = new s2r_game_stats_add_stream ();
       addPlayer.PlayerStats.Health = 50;
       addPlayer.PlayerStats.MovementSpeed = 100;
       addPlayer.PlayerStats.FrozenFlags = 0;
-      Message testMessage = addPlayer.Generate ();
-      networkPlayer.NotifyReplication (testMessage);
+      
+      networkPlayer.NotifyReplication (addPlayer);
 
       //Notify this player of other players
       foreach (NetworkPlayer player in networkPlayer.replicationList)
@@ -484,62 +479,84 @@ namespace TCoSServer.GameServer.Network
         addPlayerTwo.PlayerPawn.NetVelocity = new FVector (0, 0, 0);
         addPlayerTwo.PlayerStats = new s2r_game_stats_add_stream ();
         addPlayerTwo.PlayerStats.Health = 50;
-        addPlayerTwo.PlayerStats.MovementSpeed = 500;
+        addPlayerTwo.PlayerStats.MovementSpeed = 100;
         addPlayerTwo.PlayerPawn.GroundSpeedModifier = 100;
         addPlayerTwo.PlayerStats.FrozenFlags = 0;
-        Message testMessage2 = addPlayerTwo.Generate ();
-        networkPlayer.connection.Send (testMessage2);
+        networkPlayer.connection.Send (addPlayerTwo);
       }
 
        //Activate every relevance object (test)
        //Hardcoded values for PT_Hawksmouth map
       for (int i = 0; i < 79; ++i)
       {
-        //Crashing ids (not InteractiveLevelElements but GameActors...)
+        //Crashing ids (not InteractiveLevelElements but GameActors.. GameActors need a specific packet for activation)
         if (i == 12 || i == 62 || i == 65)
               continue;
         s2c_interactivelevelelement_add packet = new s2c_interactivelevelelement_add ();
         packet.RelevanceID = nextRelevanceId++;
-        packet.NetRotation = new FVector ();
-        packet.NetLocation = new FVector ();
+        if (i == 28)//Test with correct location/rotation (extracted with package extractor, Gilded leaf entreance north
+        {
+            packet.NetRotation = new FVector(0, 33984, 0);
+            packet.NetLocation = new FVector(-12889.61f, -2601.445f, 7413.848f);
+        }
+        else
+        {
+            packet.NetRotation = new FVector();
+            packet.NetLocation = new FVector();
+        }
         packet.LevelObjectID = i;
         packet.IsEnabledBitfield = 1;
         packet.IsHidden = 0;
-        packet.CollisionType = 2;
-        packet.ActivatedRespawnTimerBitfield = 0;
-        Message interactiveAdd = packet.Generate ();
-        networkPlayer.connection.Send (interactiveAdd);
+        packet.CollisionType = 3;
+        packet.ActivatedRespawnTimerBitfield = 3;
+        
+        networkPlayer.connection.Send(packet);
       }
          
     }
 
+
     private static void HandleILEOnRadialMenuOption(NetworkPlayer nPlayer, Message message)
     {
-        Console.WriteLine("[GS] Handle C2S_INTERACTIVELEVELELEMENT_CL2SV_ONRADIALMENUOPTION");
-        c2s_interactivelevelelement_cl2sv_onradialmenuoption packet = new c2s_interactivelevelelement_cl2sv_onradialmenuoption();
-        packet.ReadFrom(message);
-        Console.WriteLine("1={0} ; 2={1} ; 3={2} ",
-        packet.InteractiveLevelElementRelevanceId, packet.CharacterId, packet.RadialMenuOptions);
+      Console.WriteLine("[GS] Handle C2S_INTERACTIVELEVELELEMENT_CL2SV_ONRADIALMENUOPTION");
+      c2s_interactivelevelelement_cl2sv_onradialmenuoption packet = new c2s_interactivelevelelement_cl2sv_onradialmenuoption();
+      packet.ReadFrom(message);
+      Console.WriteLine("1={0} ; 2={1} ; 3={2} ",
+      packet.InteractiveLevelElementRelevanceId, packet.CharacterId, packet.RadialMenuOptions);
 
-        //Works for mailboxes...
-        Console.WriteLine("[GS] Send S2R_INTERACTIVELEVELELEMENT_SV2CLREL_STARTCLIENTSUBACTION");
-        s2r_interactivelevelelement_sv2clrel_startclientsubaction answer = new s2r_interactivelevelelement_sv2clrel_startclientsubaction();
-        answer.InteractiveLevelElementRelevanceId = packet.InteractiveLevelElementRelevanceId;
-        answer.Unknown1 = 0;
-        answer.RadialMenuOption = packet.RadialMenuOptions;
-        answer.Unused1 = 0;
-        answer.CompareFlag = 0;
-        Message answerMessage = answer.Generate();
-        nPlayer.connection.Send(answerMessage);
 
-        Console.WriteLine("[GS] Send S2R_INTERACTIVELEVELELEMENT_SV2CLREL_ENDCLIENTSUBACTION");
-        s2r_interactivelevelelement_sv2clrel_endclientsubaction answer2 = new s2r_interactivelevelelement_sv2clrel_endclientsubaction();
-        answer2.InteractiveLevelElementRelevanceId = packet.InteractiveLevelElementRelevanceId;
-        answer2.Unknown1 = 0;//If '1', mailboxes do not work anymore (maybe Action index)
-        answer2.RadialMenuOption = packet.RadialMenuOptions;
-        answer2.Unknown3 = 0;
-        Message answer2Message = answer2.Generate();
-        nPlayer.connection.Send(answer2Message);
+      //Works for mailboxes...
+      // Console.WriteLine("[GS] Send S2R_INTERACTIVELEVELELEMENT_SV2CLREL_STARTCLIENTSUBACTION");
+      // Console.WriteLine("[GS] Values: Unkown1={0};", testUnknwown1start);
+      s2r_interactivelevelelement_sv2clrel_startclientsubaction answer = new s2r_interactivelevelelement_sv2clrel_startclientsubaction();
+      answer.InteractiveLevelElementRelevanceId = packet.InteractiveLevelElementRelevanceId;
+      answer.SubActionIndex = 0;//Subaction index seems to be taken into account only in start packet
+      answer.Unkown1 = 0;
+      answer.Unknown2 = 0;// packet.RadialMenuOptions;
+      answer.OtherRelevanceId = packet.CharacterId;
+        
+      nPlayer.connection.Send(answer);
+
+      // Console.WriteLine("[GS] Send S2R_INTERACTIVELEVELELEMENT_SV2CLREL_ENDCLIENTSUBACTION");
+      // Console.WriteLine("[GS] Values: Unkown1={0}; Unknown3={1}", testUnknwown1, testUnknwown3);
+      s2r_interactivelevelelement_sv2clrel_endclientsubaction answer2 = new s2r_interactivelevelelement_sv2clrel_endclientsubaction();
+      answer2.InteractiveLevelElementRelevanceId = packet.InteractiveLevelElementRelevanceId;
+      answer2.Unknown1 = 0;//(maybe Action index)
+      answer2.SubActionIndex = 0;// packet.RadialMenuOptions; => seems to be SubActionIndex
+      answer2.Unknown3 = 0;
+      //Message answer2Message = answer2.Generate();
+      //nPlayer.connection.Send(answer2Message);
+
+      s2c_game_playerpawn_sv2cl_clientsidetrigger trigger = new s2c_game_playerpawn_sv2cl_clientsidetrigger();
+      trigger.EventTrigger =  "'MyLevel.EV_Claustroport4'";
+      trigger.RelevanceId = packet.InteractiveLevelElementRelevanceId;
+      nPlayer.connection.Send(trigger);
+
+      s2c_game_actor_move testmove = new s2c_game_actor_move();
+      testmove.NetLocation = new FVector(-190260, -159788, 6320);
+      testmove.Unknown2 = packet.CharacterId;
+      nPlayer.connection.Send(testmove);
+
     }
     
   }

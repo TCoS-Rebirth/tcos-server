@@ -11,9 +11,9 @@ namespace TCoSServer.GameServer.Network.Packets
     class s2r_interactivelevelelement_sv2clrel_endclientsubaction : SBPacket
     {
         public Int32 InteractiveLevelElementRelevanceId;
-        public Int32 Unknown1;
-        public ERadialMenuOptions RadialMenuOption;
-        public Int32 Unknown3;
+        public Int32 Unknown1;//Suboption?
+        public Int32 SubActionIndex;
+        public Int32 Unknown3;//aReverse?
 
         public override Message Generate()
         {
@@ -22,7 +22,7 @@ namespace TCoSServer.GameServer.Network.Packets
             {
                 writer.Write(InteractiveLevelElementRelevanceId);
                 writer.Write(Unknown1);
-                writer.Write((int)RadialMenuOption);
+                writer.Write(SubActionIndex);
                 writer.Write(Unknown3);
                 result = writer.ComputeMessage();
             }

@@ -65,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\Message.cs" />
+    <Compile Include="Common\MessagePool.cs" />
     <Compile Include="Common\MessageReader.cs" />
     <Compile Include="Common\MessageWriter.cs" />
     <Compile Include="GameServer\Gameplay\Character.cs" />
@@ -88,6 +89,7 @@
     <Compile Include="GameServer\Network\Packets\c2s_world_pre_login_ack.cs" />
     <Compile Include="GameServer\Network\Packets\connect.cs" />
     <Compile Include="GameServer\Network\Packets\disconnect.cs" />
+    <Compile Include="GameServer\Network\Packets\s2c_game_playerpawn_sv2cl_clientsidetrigger.cs" />
     <Compile Include="GameServer\Network\Packets\s2c_interactivelevelelement_add.cs" />
     <Compile Include="GameServer\Network\Packets\s2r_game_pawn_sv2clrel_teleportto.cs" />
     <Compile Include="GameServer\Network\Packets\s2r_interactivelevelelement_sv2clrel_endclientsubaction.cs" />

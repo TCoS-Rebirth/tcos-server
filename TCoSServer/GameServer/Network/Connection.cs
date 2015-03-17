@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using TCoSServer.Common;
 using System.Threading.Tasks;
 using System;
+using TCoSServer.GameServer.Network.Packets;
 
 namespace TCoSServer.GameServer.Network
 {
@@ -37,12 +38,12 @@ namespace TCoSServer.GameServer.Network
         connectionToClient.Disconnect (false);
     }
 
-    public async void Send (Message toSend)
+    public async void Send(SBPacket toSend)
     {
       Action action = SendAsyncInternal;
-      messagesToSend.Enqueue (toSend);
+      messagesToSend.Enqueue(toSend);
       if (!isSending)
-        await Task.Run (action);
+        await Task.Run(action);
     }
 
     private void SendAsyncInternal ()
@@ -52,8 +53,10 @@ namespace TCoSServer.GameServer.Network
       {
         try
         {
-          Message toSend = (Message)messagesToSend.Dequeue ();
+          SBPacket packet = (SBPacket)messagesToSend.Dequeue();
+          Message toSend = packet.Generate();//(Message)messagesToSend.Dequeue ();
           connectionToClient.Send (toSend.data);
+          MessagePool.GetInstance().ReturnToPool(toSend);
         }
         catch (InvalidOperationException)
         {

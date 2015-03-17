@@ -26,6 +26,16 @@ namespace TCoSServer.Common
     //Defined by the header
     public UInt16 size = 0;
     public byte[] data = null;
+
+    public void reset()
+    {
+      data = null;
+      size = 0;
+      id = 0;
+      clientSocket = null;
+      header = null;
+      header = new byte[headerSize];
+    }
   }
 
   /// <summary>

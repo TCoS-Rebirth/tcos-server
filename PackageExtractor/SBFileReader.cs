@@ -99,11 +99,21 @@ namespace PackageExtractor
       return result;
     }
 
-    public Int32 ReadIndex ()
+    //Helper function to avoid API break: allows to call ReadIndex without parameters
+    public Int32 ReadIndex()
+    {
+      int dummy = 0;//this var is not used
+
+      int index = ReadIndex(ref dummy);
+
+      return index;
+    }
+
+    public Int32 ReadIndex (ref int indexSize)
     {
       bool isNegative = false;
       byte firstByte = ReadByte ();
-
+      indexSize = 1;
       Int32 index = firstByte & 0x3F;
       if ((firstByte & 0x80) != 0)
         isNegative = true;
@@ -111,19 +121,22 @@ namespace PackageExtractor
       if ((firstByte & 0x40) != 0)
       {
         byte secondByte = ReadByte ();
+        ++indexSize;
         index = index | ((secondByte & 0x7F) << 6);
         if ((secondByte & 0x80) != 0)
         {
           byte thirdByte = ReadByte ();
-
+          ++indexSize;
           index = index | ((thirdByte & 0x7F) << 13);
           if ((thirdByte & 0x80) != 0)
           {
             byte fourthByte = ReadByte ();
+            ++indexSize;
             index = index | ((fourthByte & 0x7f) << 20);
             if ((fourthByte & 0x80) != 0)
             {
               byte fifthByte = ReadByte ();
+              ++indexSize;
               index = index | ((fifthByte & 0x7F) << 27);
             }
           }

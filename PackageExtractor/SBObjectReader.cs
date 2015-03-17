@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace PackageExtractor
 {
@@ -16,19 +17,51 @@ namespace PackageExtractor
     public string ArrayIndex;
     public string StructName;
     public string Size;
+    public Dictionary<string, SBProperty> Array = new Dictionary<string, SBProperty>(); //If the property is an ArrayProperty, this member is filled
 
     public override string ToString ()
     {
       StringBuilder builder = new StringBuilder ();
       builder.AppendLine ("Name: " + Name);
       builder.AppendLine ("Type: " + Type + " (Size: " + Size +")");
-      builder.AppendLine ("Value: " + Value);
+      if (Array.Count == 0)
+        builder.AppendLine ("Value: " + Value);
       if (ArrayIndex != null)
         builder.AppendLine ("ArrayIndex: " + ArrayIndex);
       if (StructName != null)
         builder.AppendLine ("StructName: " + StructName);
+      if (Array.Count>0)
+      {
+        builder.AppendLine("Array values:");
+        builder.AppendLine("BEGIN ARRAY");
+        foreach(KeyValuePair<string,SBProperty> pair in Array)
+          builder.AppendLine(pair.Value.ToString());
+        builder.AppendLine("END ARRAY");
+        
+      }
 
       return builder.ToString ();
+    }
+
+    public XElement ToXML()
+    {
+      string xmlName;
+      if (Name[0] >= '0' && Name[0] <= '9')
+        xmlName = "T" + Name;
+      else xmlName = Name;
+      XElement result = new XElement(Type.ToString(), Value);
+      result.SetAttributeValue("name", xmlName);
+      if (StructName != null)
+        result.SetAttributeValue("StructName", StructName);
+
+      if (Array.Count > 0)
+      {
+        foreach (KeyValuePair<string, SBProperty> pair in Array)
+        {
+          result.Add(pair.Value.ToXML());
+        }
+      }
+      return result;
     }
   }
 
@@ -74,6 +107,24 @@ namespace PackageExtractor
         builder.AppendLine ("No Properties");
 
       return builder.ToString();
+    }
+
+    public XElement ToXML()
+    {
+      XElement result = new XElement(ClassName);
+      /*
+      if (ClassName != "")
+        result = new XElement(ClassName.Substring(0, ClassName.IndexOf(' ')));
+      else result = new XElement("NullClass");*/
+      result.SetAttributeValue("name", Name);
+      if (Properties.Count > 0)
+      {
+        XElement properties = new XElement("Properties");
+        foreach (KeyValuePair<string, SBProperty> prop in Properties)
+          properties.Add(prop.Value.ToXML());
+        result.Add(properties);
+      }
+      return result;
     }
   }
 
@@ -137,17 +188,17 @@ namespace PackageExtractor
       this.package = package;
     }
 
-    public SBObject ReadObject (SBFileReader fileReader, ExportEntry entry)
+    public SBObject ReadObject (SBFileReader fileReader, ExportEntry entry, bool showAncestors = true)
     {
       SBObject result = new SBObject ();
       result.Class = new SBClass ();
       result.Name = package.NameTable[entry.ObjectName];
       result.Flags = new List<ObjectFlags> ();
       result.Properties = new Dictionary<string, SBProperty> ();
-      result.ClassName = package.FindReferenceName(entry.ClassReference);
-      result.Package = package.FindReferenceName(entry.PackageReference);
+      result.ClassName = package.FindReferenceName(entry.ClassReference, showAncestors);
+      result.Package = package.FindReferenceName(entry.PackageReference, showAncestors);
       result.Size = entry.SerialSize;
-      result.SuperClassName = package.FindReferenceName (entry.SuperReference);
+      result.SuperClassName = package.FindReferenceName(entry.SuperReference, showAncestors);
 
       bool hasExecutionStack = false;
 
@@ -180,83 +231,88 @@ namespace PackageExtractor
         }
       }
 
-      ReadProperties (fileReader, result, entry);
+      ReadProperties(fileReader, result, entry, showAncestors);
 
       //Try to read class
-      string className = result.ClassName.Substring (0, result.ClassName.IndexOf ("(") - 1).Trim ();
-      
+ 
+      string className; ;
+
+      if (result.ClassName.Contains("("))
+        className = result.ClassName.Substring (0, result.ClassName.IndexOf ("(") - 1).Trim ();
+      else className = result.ClassName;
+          
       switch (className)
       {
         case "Const":
-          result.Class = ReadConstClass (fileReader);
+          result.Class = ReadConstClass(fileReader);
           break;
         case "Enum":
-          result.Class = ReadEnumClass (fileReader);
+          result.Class = ReadEnumClass(fileReader);
           break;
         case "Property":
-          result.Class = ReadPropertyClass (fileReader);
+          result.Class = ReadPropertyClass(fileReader);
           break;
         case "ByteProperty":
-          result.Class = ReadBytePropertyClass (fileReader);
+          result.Class = ReadBytePropertyClass(fileReader);
           break;
         case "ObjectProperty":
-          result.Class = ReadObjectPropertyClass (fileReader);
+          result.Class = ReadObjectPropertyClass(fileReader);
           break;
         case "FixedArrayProperty":
-          result.Class = ReadFixedArrayPropertyClass (fileReader);
+          result.Class = ReadFixedArrayPropertyClass(fileReader);
           break;
         case "ArrayProperty":
-          result.Class = ReadArrayPropertyClass (fileReader);
+          result.Class = ReadArrayPropertyClass(fileReader);
           break;
         case "MapProperty":
-          result.Class = ReadMapPropertyClass (fileReader);
+          result.Class = ReadMapPropertyClass(fileReader);
           break;
         case "ClassProperty":
-          result.Class = ReadClassPropertyClass (fileReader);
+          result.Class = ReadClassPropertyClass(fileReader);
           break;
         case "StructProperty":
-          result.Class = ReadStructPropertyClass (fileReader);
+          result.Class = ReadStructPropertyClass(fileReader);
           break;
         case "IntProperty":
-          result.Class = ReadIntPropertyClass (fileReader);
+          result.Class = ReadIntPropertyClass(fileReader);
           break;
         case "BoolProperty":
-          result.Class = ReadBoolPropertyClass (fileReader);
+          result.Class = ReadBoolPropertyClass(fileReader);
           break;
         case "FloatProperty":
-          result.Class = ReadFloatPropertyClass (fileReader);
+          result.Class = ReadFloatPropertyClass(fileReader);
           break;
         case "NameProperty":
-          result.Class = ReadNamePropertyClass (fileReader);
+          result.Class = ReadNamePropertyClass(fileReader);
           break;
         case "StrProperty":
-          result.Class = ReadStrPropertyClass (fileReader);
+          result.Class = ReadStrPropertyClass(fileReader);
           break;
         case "StringProperty":
-          result.Class = ReadIntPropertyClass (fileReader);
+          result.Class = ReadIntPropertyClass(fileReader);
           break;
         case "Struct":
-          result.Class = ReadStructClass (fileReader);
+          result.Class = ReadStructClass(fileReader);
           break;
         case "Function":
-          result.Class = ReadFunctionClass (fileReader);
+          result.Class = ReadFunctionClass(fileReader);
           break;
         case "State":
-          result.Class = ReadStateClass (fileReader);
+          result.Class = ReadStateClass(fileReader);
           break;
         case "null":
         case "None":
-          result.Class = ReadNullClass (fileReader);
+          result.Class = ReadNullClass(fileReader);
           break;
         default:
-          Console.WriteLine ("Not a base unreal class");
+          //Console.WriteLine ("Not a base unreal class");
           break;
       }
-      
+
       return result;
     }
 
-    private void ReadProperties (SBFileReader fileReader, SBObject result, ExportEntry entry)
+    private void ReadProperties (SBFileReader fileReader, SBObject result, ExportEntry entry, bool showAncestors)
     {
       //Name index of the next property to be read
       int propertyNameIndex;
@@ -267,7 +323,14 @@ namespace PackageExtractor
         SBProperty property = new SBProperty ();
 
         propertyNameIndex = fileReader.ReadIndex ();
-        property.Name = package.NameTable[propertyNameIndex];
+        try
+        {
+          property.Name = package.NameTable[propertyNameIndex];
+        }catch(IndexOutOfRangeException)
+        {
+          Console.WriteLine("Error: failed to read entire package.");
+          break;
+        }
 
         //Detect end of property list
         if (package.NameTable[propertyNameIndex] == "DRFORTHEWIN" || package.NameTable[propertyNameIndex] == "None")
@@ -366,24 +429,184 @@ namespace PackageExtractor
 
           case PropertyType.ObjectProperty:
             int objectReference = fileReader.ReadIndex ();
-            property.Value = package.FindReferenceName (objectReference) + " (reference)";
+            property.Value = package.FindReferenceName(objectReference, showAncestors) /*+ " (reference)"*/;
             break;
 
           //Structs are a special case
           case PropertyType.StructProperty:
 
             if (property.StructName == "Vector")
-              property.Value = "(X=" + fileReader.ReadFloat () + "; Y=" + fileReader.ReadFloat () + "; Z=" + fileReader.ReadFloat () + ")";
+              property.Value = fileReader.ReadFloat () + ";" + fileReader.ReadFloat () + ";" + fileReader.ReadFloat ();
             else if (property.StructName == "Rotator")
               property.Value = "(Pitch=" + fileReader.ReadInt32 () + "; Yaw=" + fileReader.ReadInt32 () + "; Roll=" + fileReader.ReadInt32 () + ")";
             else if (property.StructName == "Color")
               property.Value = "(R=" + fileReader.ReadByte () + "; G=" + fileReader.ReadByte () + "; B=" + fileReader.ReadByte () + "; A=" + fileReader.ReadByte () + ")";
             else if (property.StructName == "LocalizedString")
-              property.Value = package.GetLocalizedString (fileReader.ReadInt32 ());
+            {
+              property.Value = package.GetLocalizedString(fileReader.ReadInt32());
+              //WIP Reversing ArrayProperties
+              if (result.Name.Contains("InteractiveLevelElement"))
+                Console.WriteLine("Description: " + property.Value + "\n");
+              
+            }
             else
-              fileReader.Seek (realSize, SeekOrigin.Current);
+              fileReader.Seek(realSize, SeekOrigin.Current);
             break;
+          case PropertyType.ArrayProperty:
+            //WIP Reversing "Actions" arrayproperty of InteractiveLevelElement
+            if ((result.Name.Contains("InteractiveLevelElement") && property.Name.Contains("Actions")))
+            {
+              property.StructName = "MenuInteraction";
+              int bytesReaded = 0;
+              Console.WriteLine("Owner Name: " + result.Name);
+              Console.WriteLine("ArrayProperty name: " + property.Name);
+              Console.WriteLine("ArrayProperty size (in bytes): " + realSize);
+              int indexSize = 0;
+              int numElementsInArrayPropery = fileReader.ReadIndex(ref indexSize);
+              bytesReaded += indexSize;
+              Console.WriteLine("Num elements in ArrayProperty: " + numElementsInArrayPropery);
 
+              int fieldName = 0;
+              int fieldSize = 0;
+              int fieldValue = 0;
+
+              //Loop into arrayproperty's elements
+              for (int k = 0; k < numElementsInArrayPropery; ++k)
+              {
+                fieldName = fileReader.ReadIndex(ref indexSize);
+                Console.WriteLine("Field Name: " + package.NameTable[fieldName]);//MenuOptions
+                bytesReaded += indexSize;
+
+
+                fieldSize = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("Field Size: " + fieldSize);//1 (that's why ReadByte() just below)
+
+                fieldValue = fileReader.ReadByte();
+                ++bytesReaded;
+                Console.WriteLine("Field Value: " + fieldValue);//5 <=> RMO_OPENDOOR
+
+                SBProperty menuOption = new SBProperty();
+                menuOption.Name = package.NameTable[fieldName];
+                menuOption.Size = fieldSize.ToString();
+                menuOption.Value = fieldValue.ToString();
+                menuOption.Type = PropertyType.ByteProperty;
+                property.Array.Add(package.NameTable[fieldName], menuOption);
+
+                //--------------------
+                fieldName = fileReader.ReadIndex(ref indexSize);
+                Console.WriteLine("Field Name: " + package.NameTable[fieldName]);//StackedActions
+                bytesReaded += indexSize;
+
+                int unknownData = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("???: " + unknownData); //41
+
+                int numElements = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("Num elements: " + numElements);//1
+
+                SBProperty stackedAction = new SBProperty();
+                stackedAction.Name = package.NameTable[fieldName];
+                stackedAction.Size = numElements.ToString();
+                stackedAction.Type = PropertyType.ArrayProperty;
+                //Loop into StackedActions's elements
+                for (int i = 0; i < numElements; ++i)
+                {
+                  fieldValue = fileReader.ReadIndex(ref indexSize);
+                  bytesReaded += indexSize;
+                  Console.WriteLine("Field value: " + package.FindReferenceName(fieldValue, false));//Interaction_Action17
+                  SBProperty stackedActionEntry = new SBProperty();
+                  stackedActionEntry.Name = stackedAction.Name + i;
+                  stackedActionEntry.Value = package.FindReferenceName(fieldValue, false);
+                  stackedActionEntry.Type = PropertyType.ObjectProperty;
+                  stackedAction.Array.Add(stackedAction.Name + i, stackedActionEntry);
+                }
+                property.Array.Add(stackedAction.Name, stackedAction);
+
+                //-------------------
+                fieldName = fileReader.ReadIndex(ref indexSize);
+                Console.WriteLine("Field Name: " + package.NameTable[fieldName]);//Requirements
+                bytesReaded += indexSize;
+
+                unknownData = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("???: " + unknownData);
+
+                numElements = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("Num elements: " + numElements);//1
+                SBProperty requirements = new SBProperty();
+                requirements.Name = package.NameTable[fieldName];
+                requirements.Type = PropertyType.ArrayProperty;
+                requirements.Size = numElements.ToString();
+                //Loop into Requirements's elements
+                for (int i = 0; i < numElements; ++i)
+                {
+                  fieldValue = fileReader.ReadIndex(ref indexSize);
+                  bytesReaded += indexSize;
+                  Console.WriteLine("Field value: " + package.FindReferenceName(fieldValue));//Interaction_Action17
+                  SBProperty requirementsEntry = new SBProperty();
+                  requirementsEntry.Name = requirements.Name + i;
+                  requirementsEntry.Value = package.FindReferenceName(fieldValue);
+                  requirementsEntry.Type = PropertyType.ObjectProperty;
+                  requirements.Array.Add(requirementsEntry.Name, requirementsEntry);
+                }
+                property.Array.Add(requirements.Name, requirements);
+
+              }//For loop through "Action" ArrayProperty elements
+
+              fileReader.Seek(-bytesReaded, SeekOrigin.Current);
+              
+              byte[] blob = fileReader.ReadBytes(realSize);
+              Console.WriteLine(BitConverter.ToString(blob));
+
+              
+            }
+            /*else if(property.Name.Contains("Requirements"))
+            {
+              Console.WriteLine("Array size (bytes): " + realSize );
+              int indexSize = 0;
+              int supposedArraySize = fileReader.ReadIndex(ref indexSize);
+              Console.WriteLine("array size: " + supposedArraySize);
+              int supposedObjectReference = fileReader.ReadIndex(ref indexSize);
+              Console.WriteLine("Index size: " + indexSize);
+              Console.WriteLine("SUpposed reference: " + package.FindReferenceName(supposedObjectReference, true));
+              Console.WriteLine("Last byte: " + fileReader.ReadByte());
+            }*/
+            else if ((result.Name.Contains("Interaction_Action") && property.Name.Contains("Actions")))
+            {
+              property.StructName = "Content_Event";
+              Console.WriteLine(result.Name);
+              int indexSize = 0;
+              int bytesReaded = 0;
+              
+              int arraySize = fileReader.ReadIndex(ref indexSize);
+              bytesReaded += indexSize;
+
+              for (int i = 0; i < arraySize; ++i)
+              {
+                int supposedReference = fileReader.ReadIndex(ref indexSize);
+                bytesReaded += indexSize;
+                Console.WriteLine("Value: " + package.FindReferenceName(supposedReference));
+                Console.WriteLine("Index size: " + indexSize);
+                SBProperty contentEvent = new SBProperty();
+                contentEvent.Name = property.Name + i;
+                contentEvent.Value = package.FindReferenceName(supposedReference);
+                contentEvent.Type = PropertyType.ObjectProperty;
+                property.Array.Add(contentEvent.Name, contentEvent);
+              }
+
+              fileReader.Seek(-bytesReaded, SeekOrigin.Current);
+
+              byte[] blob = fileReader.ReadBytes(realSize);
+              Console.WriteLine(BitConverter.ToString(blob));
+
+             // Console.ReadKey();
+            }
+            else
+              fileReader.Seek(realSize, SeekOrigin.Current);
+            break;
           default:
             fileReader.Seek (realSize, SeekOrigin.Current);
             break;

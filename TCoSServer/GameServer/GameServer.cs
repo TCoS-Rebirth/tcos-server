@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using TCoSServer.Common;
 using TCoSServer.GameServer.Network;
+using TCoSServer.GameServer.Network.Packets;
 
 namespace TCoSServer.GameServer
 {
@@ -33,7 +34,7 @@ namespace TCoSServer.GameServer
 
     List<NetworkPlayer> playersList;
 
-    public void DebugSendMessageToEveryone (Message message)
+    public void DebugSendMessageToEveryone (SBPacket message)
     {
       foreach (NetworkPlayer player in playersList)
         player.SendMessage (message);
