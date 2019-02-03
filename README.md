@@ -1,3 +1,5 @@
+Old POC, **obsolete** - visit spellborn.org for news!
+
 tcos-server
 ===========
 
